@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sarahweb — Distortion Lab (Deluxe)</title>
+<style>
+  body{margin:0;background:#0b0c10;color:#e5e7eb;font-family:system-ui,Segoe UI,Roboto,Arial}
+  header{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid #222;background:#111}
+  h1{font-size:16px;margin:0}
+  .btn{background:#1f2430;border:1px solid #2a3140;color:#e5e7eb;padding:6px 10px;border-radius:6px;cursor:pointer}
+  .btn:hover{background:#2b3245}
+  .stack{display:flex;gap:10px;flex-wrap:wrap;margin-left:auto}
+  fieldset{border:1px solid #333;border-radius:8px;padding:6px 10px}
+  legend{font-size:12px;color:#bbb}
+  label{font-size:12px;display:flex;flex-direction:column;align-items:center}
+  label.inline{flex-direction:row;gap:6px}
+  input[type=range]{width:120px}
+  input[type=color]{width:34px;height:26px;padding:0;border:none;background:transparent}
+  .checks label{flex-direction:row;gap:6px}
+  #drop{outline:2px dashed #2f3747;padding:18px;text-align:center;border-radius:10px;margin:10px;color:#9aa3b2}
+  canvas,video{display:block;margin:10px auto;max-width:95vw;max-height:75vh;background:#000;border-radius:10px}
+  #status{position:fixed;left:10px;bottom:10px;background:#111a;padding:8px 10px;border:1px solid #333;border-radius:8px;font:12px/1.3 monospace;max-width:90vw;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<header>
+  <h1>Sarahweb — Distortion Lab</h1>
+  <button id="btnUpload" class="btn">Upload</button>
+  <input id="file" type="file" accept="image/*" style="display:none">
+  <button id="btnCam" class="btn">Webcam</button>
+  <button id="btnSave" class="btn">Save PNG</button>
+  <button id="btnRandom" class="btn">🎲 Randomize</button>
+
+  <div class="stack">
+    <fieldset>
+      <legend>Effects (stacked)</legend>
+      <div class="checks" style="display:flex;gap:10px;flex-wrap:wrap;">
+        <label><input type="checkbox" id="fxSkew">Skew</label>
+        <label><input type="checkbox" id="fxWarp" checked>Warp</label>
+        <label><input type="checkbox" id="fxPixel">Pixelate</label>
+        <label><input type="checkbox" id="fxTri">Triangles</label>
+        <label><input type="checkbox" id="fxSort">Pixel Sort</label>
+        <label><input type="checkbox" id="fxSortV">Sort Vertical</label>
+        <label><input type="checkbox" id="fxGlitch">Glitch</label>
+        <label><input type="checkbox" id="fxRGB" checked>RGB Split</label>
+        <label><input type="checkbox" id="fxGrain" checked>Grain</label>
+        <label><input type="checkbox" id="fxLeak">Light Leak</label>
+        <label><input type="checkbox" id="fxColor">Colorize (2×)</label>
+        <label><input type="checkbox" id="fxInvert">Invert</label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Main Controls</legend>
+      <div class="stack">
+        <label>Cell <input id="cell" type="range" min="2" max="128" value="24"></label>
+        <label>Distort <input id="strength" type="range" min="0" max="100" value="40"></label>
+        <label>RGB <input id="rgb" type="range" min="0" max="100" value="35"></label>
+        <label>Grain <input id="grain" type="range" min="0" max="100" value="12"></label>
+        <label>Speed <input id="speed" type="range" min="0" max="100" value="50"></label>
+        <label>Leak <input id="leak" type="range" min="0" max="100" value="20"></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Skew & Sort</legend>
+      <div class="stack">
+        <label>Skew X <input id="skewX" type="range" min="-100" max="100" value="0"></label>
+        <label>Skew Y <input id="skewY" type="range" min="-100" max="100" value="0"></label>
+        <label>SortWin <input id="sortWin" type="range" min="4" max="128" value="48"></label>
+        <label>SortTh <input id="sortTh" type="range" min="0" max="100" value="55"></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Glitch & Colorize</legend>
+      <div class="stack">
+        <label>Glitch <input id="glitchAmt" type="range" min="0" max="100" value="35"></label>
+        <label>Blocks <input id="glitchBlk" type="range" min="0" max="100" value="35"></label>
+        <label>Chaos <input id="glitchPr" type="range" min="0" max="100" value="25"></label>
+        <label class="inline">Col1 <input id="col1" type="color" value="#ff0055"></label>
+        <label>Amt1 <input id="col1Amt" type="range" min="0" max="100" value="35"></label>
+        <label class="inline">Col2 <input id="col2" type="color" value="#00d5ff"></label>
+        <label>Amt2 <input id="col2Amt" type="range" min="0" max="100" value="20"></label>
+        <label>Blend
+          <select id="blend">
+            <option value="0">Screen</option>
+            <option value="1">Multiply</option>
+            <option value="2">Overlay</option>
+          </select>
+        </label>
+      </div>
+    </fieldset>
+  </div>
+</header>
+
+<div id="drop">Drop an image here or click Upload. Webcam needs http://localhost (allow camera).</div>
+<canvas id="gl"></canvas>
+<video id="vid" autoplay playsinline muted style="display:none"></video>
+<div id="status"></div>
+
+<script>
+(() => {
+  const status = (m)=>{ document.getElementById('status').textContent = m; };
+
+  const canvas = document.getElementById('gl');
+  const gl = canvas.getContext('webgl');
+  const vid = document.getElementById('vid');
+  const drop = document.getElementById('drop');
+
+  if(!gl){ status('WebGL not available. Try Chrome/Edge/Firefox.'); return; }
+
+  // UI
+  const file = document.getElementById('file');
+  document.getElementById('btnUpload').onclick = () => file.click();
+  document.getElementById('btnCam').onclick = startCam;
+  document.getElementById('btnSave').onclick = savePNG;
+  document.getElementById('btnRandom').onclick = randomizeAll;
+  file.onchange = e => { if(e.target.files[0]) loadFile(e.target.files[0]); };
+
+  drop.ondragover = e => { e.preventDefault(); drop.style.background="#222"; };
+  drop.ondragleave = e => { e.preventDefault(); drop.style.background=""; };
+  drop.ondrop = e => { e.preventDefault(); drop.style.background=""; if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); };
+
+  const fx = {
+    skew:  document.getElementById('fxSkew'),
+    warp:  document.getElementById('fxWarp'),
+    pixel: document.getElementById('fxPixel'),
+    tri:   document.getElementById('fxTri'),
+    sort:  document.getElementById('fxSort'),
+    sortV: document.getElementById('fxSortV'),
+    glitch:document.getElementById('fxGlitch'),
+    rgb:   document.getElementById('fxRGB'),
+    grain: document.getElementById('fxGrain'),
+    leak:  document.getElementById('fxLeak'),
+    color: document.getElementById('fxColor'),
+    invert:document.getElementById('fxInvert'),
+  };
+  const ui = {
+    cell: document.getElementById('cell'),
+    str:  document.getElementById('strength'),
+    rgb:  document.getElementById('rgb'),
+    grain:document.getElementById('grain'),
+    speed:document.getElementById('speed'),
+    leak: document.getElementById('leak'),
+    sortWin: document.getElementById('sortWin'),
+    sortTh:  document.getElementById('sortTh'),
+    skewX: document.getElementById('skewX'),
+    skewY: document.getElementById('skewY'),
+    glitchAmt: document.getElementById('glitchAmt'),
+    glitchBlk: document.getElementById('glitchBlk'),
+    glitchPr:  document.getElementById('glitchPr'),
+    col1: document.getElementById('col1'),
+    col1Amt: document.getElementById('col1Amt'),
+    col2: document.getElementById('col2'),
+    col2Amt: document.getElementById('col2Amt'),
+    blend: document.getElementById('blend'),
+  };
+
+  // GLSL helpers
+  function sh(type,src){ const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
+    if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw gl.getShaderInfoLog(s); return s; }
+  function prog(vs,fs){ const p=gl.createProgram(); gl.attachShader(p,vs); gl.attachShader(p,fs); gl.linkProgram(p);
+    if(!gl.getProgramParameter(p,gl.LINK_STATUS)) throw gl.getProgramInfoLog(p); return p; }
+
+  const VS = `
+    attribute vec2 aPos; attribute vec2 aUV; varying vec2 vUV;
+    void main(){ vUV=aUV; gl_Position=vec4(aPos,0.,1.); }
+  `;
+  const COM = `precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform vec2 uRes; uniform float uTime;`;
+
+  const fsCopy  = sh(gl.FRAGMENT_SHADER, COM+`void main(){ gl_FragColor = texture2D(uTex,vUV); }`);
+
+  const fsSkew  = sh(gl.FRAGMENT_SHADER, COM+`
+    uniform float uSkewX,uSkewY;
+    void main(){
+      vec2 uv=vUV;
+      vec2 c=vec2(0.5);
+      vec2 d = uv - c;
+      uv = c + vec2(d.x + uSkewX*(d.y), d.y + uSkewY*(d.x));
+      gl_FragColor = texture2D(uTex, uv);
+    }
+  `);
+
+  const fsWarp  = sh(gl.FRAGMENT_SHADER, COM+`
+    uniform float uStr,uRGB,uSpeed;
+    vec2 dir(float t){ return vec2(cos(t*.7), sin(t*.9)); }
+    void main(){
+      float t=uTime*uSpeed; vec2 uv=vUV;
+      float w1=sin(uv.y*12.+1.2*t), w2=cos(uv.x*9.-1.1*t), w3=sin((uv.x+uv.y)*6.-.7*t);
+      uv += vec2(w1*w2,w3)*(uStr*.035);
+      vec2 c=vec2(.5); vec2 d=uv-c; float r=length(d);
+      float a=atan(d.y,d.x) + r*(uStr*.35)*sin(t*.4);
+      uv = c + vec2(cos(a),sin(a))*r;
+      vec2 off=dir(t)*(uRGB*.004);
+      float rC=texture2D(uTex,uv+off).r; float gC=texture2D(uTex,uv).g; float bC=texture2D(uTex,uv-off).b;
+      gl_FragColor=vec4(rC,gC,bC,1.0);
+    }
+  `);
+
+  const fsPixel = sh(gl.FRAGMENT_SHADER, COM+`
+    uniform float uCell,uRGB;
+    void main(){
+      vec2 grid = uRes/max(uCell,1.0);
+      vec2 uvq = floor(vUV*grid)/grid;
+      vec2 off = vec2(0.707)* (uRGB*0.004);
+      float r=texture2D(uTex,uvq+off).r, g=texture2D(uTex,uvq).g, b=texture2D(uTex,uvq-off).b;
+      gl_FragColor=vec4(r,g,b,1.0);
+    }
+  `);
+
+  const fsTri = sh(gl.FRAGMENT_SHADER, COM+`
+    uniform float uCell,uRGB;
+    void main(){
+      vec2 grid=uRes/max(uCell,1.0); vec2 cell=vUV*grid; vec2 f=fract(cell); vec2 base=floor(cell)/grid; vec2 A,B;
+      if(f.x+f.y<1.){ A=base; B=(floor(cell)+vec2(1.,0.))/grid; } else { A=(floor(cell)+vec2(1.,1.))/grid; B=(floor(cell)+vec2(0.,1.))/grid; }
+      float bias=.5+.5*sin((base.x+base.y)*12. + uTime*.8);
+      vec2 uvt=mix(A,B,bias);
+      vec2 off=vec2(.003)*uRGB;
+      float r=texture2D(uTex,uvt+off).r, g=texture2D(uTex,uvt).g, b=texture2D(uTex,uvt-off).b;
+      gl_FragColor=vec4(r,g,b,1.0);
+    }
+  `);
+
+  const fsSort = sh(gl.FRAGMENT_SHADER, COM+`
+    uniform float uWin,uTh; uniform int uVertical;
+    float lum(vec3 c){ return dot(c, vec3(0.2126,0.7152,0.0722)); }
+    void main(){
+      vec4 base=texture2D(uTex,vUV); vec3 best=base.rgb; float bestL=-1.;
+      float steps=uWin;
+      vec2 stepUV = (uVertical==1) ? vec2(0.,1.0/uRes.y) : vec2(1.0/uRes.x, 0.);
+      for(float i=1.; i<=128.; i+=1.){ if(i>steps) break;
+        vec3 c = texture2D(uTex, vUV + stepUV*i).rgb;
+        float L = lum(c);
+        if(L > uTh && L > bestL){ bestL=L; best=c; }
+      }
+      vec3 outc = (bestL>0.) ? mix(base.rgb,best,0.85) : base.rgb;
+      gl_FragColor=vec4(outc,1.0);
+    }
+  `);
+
+  const fsGlitch = sh(gl.FRAGMENT_SHADER, COM+`
+    uniform float uAmt,uBlk,uPr; // 0..1 each
+    float n(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }
+    void main(){
+      vec2 uv=vUV;
+      float line = step(1.0-uPr, n(vec2(floor(uv.y* uRes.y), floor(uTime*2.0))));
+      float jitter = (n(vec2(uv.y*37.2, uTime)) - 0.5) * uAmt * 0.08;
+      uv.x += line * jitter;
+
+      // random block shift
+      float nb = n(floor(uv*8.0)+floor(uTime));
+      if(nb > 1.0 - uPr*0.6){
+        vec2 off = vec2( (n(vec2(nb,uv.y))-0.5)*uBlk*0.15, (n(vec2(nb,uv.x))-0.5)*uBlk*0.05 );
+        uv += off;
+      }
+
+      // subtle channel desync
+      vec2 ch = vec2(0.002)*uAmt;
+      float r=texture2D(uTex, uv+ch).r, g=texture2D(uTex, uv).g, b=texture2D(uTex, uv-ch).b;
+      gl_FragColor=vec4(r,g,b,1.0);
+    }
+  `);
+
+  const fsRGB  = sh(gl.FRAGMENT_SHADER, COM+`
+    uniform float uAmt;
+    void main(){
+      vec2 off=vec2(cos(uTime*.7),sin(uTime*.9))*(uAmt*.004);
+      float r=texture2D(uTex,vUV+off).r, g=texture2D(uTex,vUV).g, b=texture2D(uTex,vUV-off).b;
+      gl_FragColor=vec4(r,g,b,1.0);
+    }
+  `);
+
+  const fsGrain= sh(gl.FRAGMENT_SHADER, COM+`
+    uniform float uAmt; float h(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+    void main(){ vec3 c=texture2D(uTex,vUV).rgb; float nn=h(vUV*vec2(128.,96.)+uTime); c+=(nn-.5)*(uAmt*.25); gl_FragColor=vec4(c,1.0); }
+  `);
+
+  const fsLeak = sh(gl.FRAGMENT_SHADER, COM+`
+    uniform float uAmt;
+    void main(){
+      vec3 c=texture2D(uTex,vUV).rgb; float t=uTime*.2;
+      vec2 p1=vec2(0.0)+0.3*vec2(sin(t*1.3),cos(t*1.1));
+      vec2 p2=vec2(1.0,0.0)+0.25*vec2(cos(t*1.7),sin(t*1.2));
+      float r1=smoothstep(.9,0.,distance(vUV,p1));
+      float r2=smoothstep(.85,0.,distance(vUV,p2));
+      vec3 leak=vec3(1.,.6,.2)*r1 + vec3(.8,.2,.9)*r2;
+      c = mix(c, c+leak, uAmt);
+      gl_FragColor=vec4(c,1.0);
+    }
+  `);
+
+  const fsColor = sh(gl.FRAGMENT_SHADER, COM+`
+    uniform vec3 c1,c2; uniform float a1,a2; uniform int mode; // 0=screen 1=multiply 2=overlay
+    vec3 screenBlend(vec3 b, vec3 s){ return 1.0 - (1.0-b)*(1.0-s); }
+    vec3 overlayBlend(vec3 b, vec3 s){ return mix(2.0*b*s, 1.0-2.0*(1.0-b)*(1.0-s), step(0.5,b)); }
+    void main(){
+      vec3 col = texture2D(uTex,vUV).rgb;
+      vec3 t1 = mix(col, screenBlend(col, c1), a1);
+      vec3 t2 = (mode==0) ? screenBlend(t1,c2) : (mode==1) ? (t1*c2) : overlayBlend(t1,c2);
+      col = mix(t1, t2, a2);
+      gl_FragColor = vec4(col,1.0);
+    }
+  `);
+
+  const fsInv  = sh(gl.FRAGMENT_SHADER, COM+`void main(){ vec4 c=texture2D(uTex,vUV); gl_FragColor=vec4(1.0-c.rgb,c.a); }`);
+
+  const P = {
+    copy : prog(sh(gl.VERTEX_SHADER,VS), fsCopy),
+    skew : prog(sh(gl.VERTEX_SHADER,VS), fsSkew),
+    warp : prog(sh(gl.VERTEX_SHADER,VS), fsWarp),
+    pixel: prog(sh(gl.VERTEX_SHADER,VS), fsPixel),
+    tri  : prog(sh(gl.VERTEX_SHADER,VS), fsTri),
+    sort : prog(sh(gl.VERTEX_SHADER,VS), fsSort),
+    glitch:prog(sh(gl.VERTEX_SHADER,VS), fsGlitch),
+    rgb  : prog(sh(gl.VERTEX_SHADER,VS), fsRGB),
+    grain: prog(sh(gl.VERTEX_SHADER,VS), fsGrain),
+    leak : prog(sh(gl.VERTEX_SHADER,VS), fsLeak),
+    color: prog(sh(gl.VERTEX_SHADER,VS), fsColor),
+    inv  : prog(sh(gl.VERTEX_SHADER,VS), fsInv),
+  };
+
+  // full-screen quad
+  const quad = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1,-1,0,0,  1,-1,1,0,  -1,1,0,1,
+    -1,1,0,1,   1,-1,1,0,   1,1,1,1
+  ]), gl.STATIC_DRAW);
+
+  function use(p){
+    gl.useProgram(p);
+    const aPos = gl.getAttribLocation(p,'aPos');
+    const aUV  = gl.getAttribLocation(p,'aUV');
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    gl.enableVertexAttribArray(aPos);
+    gl.enableVertexAttribArray(aUV);
+    gl.vertexAttribPointer(aPos,2,gl.FLOAT,false,16,0);
+    gl.vertexAttribPointer(aUV ,2,gl.FLOAT,false,16,8);
+    const uRes=gl.getUniformLocation(p,'uRes'); if(uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
+    const uTime=gl.getUniformLocation(p,'uTime'); if(uTime) gl.uniform1f(uTime, performance.now()/1000);
+  }
+
+  // ping-pong targets
+  let fbA=null, fbB=null, texA=null, texB=null, srcTex=null;
+  function makeRT(w,h){
+    function mkTex(){
+      const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+      return t;
+    }
+    function mkFBO(t){ const f=gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER,f);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0); return f; }
+    texA=mkTex(); texB=mkTex(); fbA=mkFBO(texA); fbB=mkFBO(texB); gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  }
+
+  function setCanvasSize(w,h){
+    canvas.width=w; canvas.height=h; gl.viewport(0,0,w,h);
+    makeRT(w,h);
+  }
+
+  // source texture
+  srcTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D,srcTex);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+
+  // placeholder
+  (function(){
+    const ph=document.createElement('canvas'); ph.width=640; ph.height=360;
+    const ctx=ph.getContext('2d'); const g=ctx.createLinearGradient(0,0,640,360);
+    g.addColorStop(0,'#222'); g.addColorStop(1,'#333'); ctx.fillStyle=g; ctx.fillRect(0,0,640,360);
+    setCanvasSize(ph.width,ph.height);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+    gl.bindTexture(gl.TEXTURE_2D,srcTex);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,ph);
+    status('Ready. Upload an image or start webcam.');
+  })();
+
+  // image + video
+  function useImage(img){
+    const max = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+    let w=img.width, h=img.height;
+    if(w>max||h>max){ const s=Math.min(max/w,max/h); w=Math.floor(w*s); h=Math.floor(h*s); }
+    setCanvasSize(w,h);
+    gl.bindTexture(gl.TEXTURE_2D,srcTex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);
+    drop.style.display='none';
+  }
+  function loadFile(f){
+    const url=URL.createObjectURL(f); const img=new Image();
+    img.onload=()=>{ URL.revokeObjectURL(url); useImage(img); status('Image loaded.'); };
+    img.onerror=()=>status('Could not load that file. Try a JPG/PNG.');
+    img.src=url;
+  }
+  async function startCam(){
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+      vid.srcObject=stream; await vid.play();
+      setCanvasSize(vid.videoWidth||640, vid.videoHeight||480);
+      drop.style.display='none'; status('Webcam on.');
+    }catch(e){ status('Webcam error: '+e); }
+  }
+
+  // draw helpers
+  function drawTo(texIn, fbOut, program, uniforms){
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbOut);
+    use(program);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texIn);
+    const uTex = gl.getUniformLocation(program,'uTex'); if(uTex) gl.uniform1i(uTex,0);
+    if(uniforms) uniforms(program);
+    gl.drawArrays(gl.TRIANGLES,0,6);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  }
+
+  // render
+  function render(){
+    requestAnimationFrame(render);
+
+    // update from video if active
+    if(vid.srcObject && !vid.paused && !vid.ended){
+      gl.bindTexture(gl.TEXTURE_2D,srcTex);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,vid);
+    }
+
+    // ping-pong
+    let read = srcTex, writeFB = fbA, writeTex = texA;
+    const swap = ()=>{ const tmpTex = writeTex; writeTex = (writeTex===texA?texB:texA); writeFB = (writeFB===fbA?fbB:fbA); read = tmpTex; };
+
+    // 0) Skew
+    if(fx.skew.checked){
+      drawTo(read, writeFB, P.skew, (p)=>{
+        gl.uniform1f(gl.getUniformLocation(p,'uSkewX'), parseFloat(ui.skewX.value)/200.0);
+        gl.uniform1f(gl.getUniformLocation(p,'uSkewY'), parseFloat(ui.skewY.value)/200.0);
+      }); swap();
+    }
+
+    // 1) Warp
+    if(fx.warp.checked){
+      drawTo(read, writeFB, P.warp, (p)=>{
+        gl.uniform1f(gl.getUniformLocation(p,'uStr'), parseFloat(ui.str.value)/100);
+        gl.uniform1f(gl.getUniformLocation(p,'uRGB'), parseFloat(ui.rgb.value)/100);
+        gl.uniform1f(gl.getUniformLocation(p,'uSpeed'), parseFloat(ui.speed.value)/50);
+      }); swap();
+    }
+
+    // 2) Pixelate
+    if(fx.pixel.checked){
+      drawTo(read, writeFB, P.pixel, (p)=>{
+        gl.uniform1f(gl.getUniformLocation(p,'uCell'), parseFloat(ui.cell.value));
+        gl.uniform1f(gl.getUniformLocation(p,'uRGB'), parseFloat(ui.rgb.value)/100);
+      }); swap();
+    }
+
+    // 3) Triangles
+    if(fx.tri.checked){
+      drawTo(read, writeFB, P.tri, (p)=>{
+        gl.uniform1f(gl.getUniformLocation(p,'uCell'), parseFloat(ui.cell.value));
+        gl.uniform1f(gl.getUniformLocation(p,'uRGB'), parseFloat(ui.rgb.value)/100);
+      }); swap();
+    }
+
+    // 4) Pixel Sort (H/V)
+    if(fx.sort.checked || fx.sortV.checked){
+      drawTo(read, writeFB, P.sort, (p)=>{
+        gl.uniform1f(gl.getUniformLocation(p,'uWin'), parseFloat(ui.sortWin.value));
+        gl.uniform1f(gl.getUniformLocation(p,'uTh'),  parseFloat(ui.sortTh.value)/100);
+        gl.uniform1i(gl.getUniformLocation(p,'uVertical'), fx.sortV.checked?1:0);
+      }); swap();
+    }
+
+    // 5) Glitch
+    if(fx.glitch.checked){
+      drawTo(read, writeFB, P.glitch, (p)=>{
+        gl.uniform1f(gl.getUniformLocation(p,'uAmt'), parseFloat(ui.glitchAmt.value)/100);
+        gl.uniform1f(gl.getUniformLocation(p,'uBlk'), parseFloat(ui.glitchBlk.value)/100);
+        gl.uniform1f(gl.getUniformLocation(p,'uPr'),  parseFloat(ui.glitchPr.value)/100);
+      }); swap();
+    }
+
+    // 6) RGB split
+    if(fx.rgb.checked){
+      drawTo(read, writeFB, P.rgb, (p)=>{
+        gl.uniform1f(gl.getUniformLocation(p,'uAmt'), parseFloat(ui.rgb.value)/100);
+      }); swap();
+    }
+
+    // 7) Grain
+    if(fx.grain.checked){
+      drawTo(read, writeFB, P.grain, (p)=>{
+        gl.uniform1f(gl.getUniformLocation(p,'uAmt'), parseFloat(ui.grain.value)/100);
+      }); swap();
+    }
+
+    // 8) Light Leak
+    if(fx.leak.checked){
+      drawTo(read, writeFB, P.leak, (p)=>{
+        gl.uniform1f(gl.getUniformLocation(p,'uAmt'), parseFloat(ui.leak.value)/100);
+      }); swap();
+    }
+
+    // 9) Colorize
+    if(fx.color.checked){
+      drawTo(read, writeFB, P.color, (p)=>{
+        const c1 = hexToRGB(ui.col1.value), c2 = hexToRGB(ui.col2.value);
+        gl.uniform3f(gl.getUniformLocation(p,'c1'), c1[0],c1[1],c1[2]);
+        gl.uniform3f(gl.getUniformLocation(p,'c2'), c2[0],c2[1],c2[2]);
+        gl.uniform1f(gl.getUniformLocation(p,'a1'), parseFloat(ui.col1Amt.value)/100);
+        gl.uniform1f(gl.getUniformLocation(p,'a2'), parseFloat(ui.col2Amt.value)/100);
+        gl.uniform1i(gl.getUniformLocation(p,'mode'), parseInt(ui.blend.value,10));
+      }); swap();
+    }
+
+    // 10) Invert
+    if(fx.invert.checked){
+      drawTo(read, writeFB, P.inv); swap();
+    }
+
+    // final to screen
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    use(P.copy);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, read);
+    gl.uniform1i(gl.getUniformLocation(P.copy,'uTex'), 0);
+    gl.drawArrays(gl.TRIANGLES,0,6);
+  }
+  render();
+
+  // save
+  function savePNG(){
+    try{
+      const a=document.createElement('a');
+      a.download='distorted.png';
+      a.href=canvas.toDataURL('image/png');
+      a.click();
+    }catch(e){ status('Save blocked: '+e); }
+  }
+
+  // utils
+  function hexToRGB(hex){
+    const n=parseInt(hex.slice(1),16);
+    return [((n>>16)&255)/255, ((n>>8)&255)/255, (n&255)/255];
+  }
+
+  // randomize
+  function randomizeAll(){
+    // random toggles
+    for(const k in fx){
+      if(k==='invert'){ fx[k].checked = Math.random()<0.25; }
+      else if(k==='grain'||k==='rgb'){ fx[k].checked = Math.random()<0.8; }
+      else fx[k].checked = Math.random()<0.6;
+    }
+    // sensible ranges
+    ui.cell.value   = randInt(4,96);
+    ui.str.value    = randInt(10,80);
+    ui.rgb.value    = randInt(0,70);
+    ui.grain.value  = randInt(0,40);
+    ui.speed.value  = randInt(20,80);
+    ui.leak.value   = randInt(0,60);
+    ui.sortWin.value= randInt(8,128);
+    ui.sortTh.value = randInt(30,80);
+    ui.skewX.value  = randInt(-40,40);
+    ui.skewY.value  = randInt(-40,40);
+    ui.glitchAmt.value = randInt(10,80);
+    ui.glitchBlk.value = randInt(10,80);
+    ui.glitchPr.value  = randInt(5,70);
+    ui.col1.value = randomColor();
+    ui.col2.value = randomColor();
+    ui.col1Amt.value = randInt(10,70);
+    ui.col2Amt.value = randInt(5,60);
+    ui.blend.value = String(randInt(0,2));
+  }
+  function randInt(a,b){ return Math.floor(a + Math.random()*(b-a+1)); }
+  function randomColor(){
+    const r=randInt(0,255), g=randInt(0,255), b=randInt(0,255);
+    return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+  }
+
+  // initial placeholder
+  function initPlaceholder(){
+    const ph=document.createElement('canvas'); ph.width=640; ph.height=360;
+    const ctx=ph.getContext('2d'); const g=ctx.createLinearGradient(0,0,640,360);
+    g.addColorStop(0,'#222'); g.addColorStop(1,'#333'); ctx.fillStyle=g; ctx.fillRect(0,0,640,360);
+    setCanvasSize(ph.width,ph.height);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+    gl.bindTexture(gl.TEXTURE_2D,srcTex);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,ph);
+  }
+
+  // support funcs used above (after hoist)
+  function setCanvasSize(w,h){
+    canvas.width=w; canvas.height=h; gl.viewport(0,0,w,h);
+    makeRT(w,h);
+  }
+  function makeRT(w,h){
+    function mkTex(){
+      const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+      return t;
+    }
+    function mkFBO(t){ const f=gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER,f);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0); return f; }
+    texA=mkTex(); texB=mkTex(); fbA=mkFBO(texA); fbB=mkFBO(texB); gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  }
+
+  // initialize placeholder texture (already done earlier)
+})();
+</script>
+</body>
+</html>
