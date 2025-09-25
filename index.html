@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Sarahweb — Distortion Lab (Deluxe)</title>
+<title>Sarahweb — Distortion Lab (VHS + Cyberpink + HUD)</title>
 <style>
   body{margin:0;background:#0b0c10;color:#e5e7eb;font-family:system-ui,Segoe UI,Roboto,Arial}
   header{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid #222;background:#111}
@@ -31,15 +31,17 @@
   <button id="btnCam" class="btn">Webcam</button>
   <button id="btnSave" class="btn">Save PNG</button>
   <button id="btnRandom" class="btn">🎲 Randomize</button>
+  <button id="btnVHS" class="btn">Preset: VHS</button>
+  <button id="btnCyber" class="btn">Preset: Cyberpink</button>
 
   <div class="stack">
     <fieldset>
       <legend>Effects (stacked)</legend>
       <div class="checks" style="display:flex;gap:10px;flex-wrap:wrap;">
         <label><input type="checkbox" id="fxSkew">Skew</label>
+        <label><input type="checkbox" id="fxVHS">VHS</label>
         <label><input type="checkbox" id="fxWarp" checked>Warp</label>
         <label><input type="checkbox" id="fxPixel">Pixelate</label>
-        <label><input type="checkbox" id="fxTri">Triangles</label>
         <label><input type="checkbox" id="fxSort">Pixel Sort</label>
         <label><input type="checkbox" id="fxSortV">Sort Vertical</label>
         <label><input type="checkbox" id="fxGlitch">Glitch</label>
@@ -47,6 +49,7 @@
         <label><input type="checkbox" id="fxGrain" checked>Grain</label>
         <label><input type="checkbox" id="fxLeak">Light Leak</label>
         <label><input type="checkbox" id="fxColor">Colorize (2×)</label>
+        <label><input type="checkbox" id="fxHUD">HUD: Text + 1010</label>
         <label><input type="checkbox" id="fxInvert">Invert</label>
       </div>
     </fieldset>
@@ -71,7 +74,7 @@
       </div>
     </fieldset>
     <fieldset>
-      <legend>Glitch & Colorize</legend>
+      <legend>Glitch & Colorize & HUD</legend>
       <div class="stack">
         <label>Glitch <input id="glitchAmt" type="range" min="0" max="100" value="35"></label>
         <label>Blocks <input id="glitchBlk" type="range" min="0" max="100" value="35"></label>
@@ -87,6 +90,7 @@
             <option value="2">Overlay</option>
           </select>
         </label>
+        <label>HUD Amt <input id="hudAmt" type="range" min="0" max="100" value="45"></label>
       </div>
     </fieldset>
   </div>
@@ -114,6 +118,8 @@
   document.getElementById('btnCam').onclick = startCam;
   document.getElementById('btnSave').onclick = savePNG;
   document.getElementById('btnRandom').onclick = randomizeAll;
+  document.getElementById('btnVHS').onclick = ()=>applyPreset('vhs');
+  document.getElementById('btnCyber').onclick = ()=>applyPreset('cyber');
   file.onchange = e => { if(e.target.files[0]) loadFile(e.target.files[0]); };
 
   drop.ondragover = e => { e.preventDefault(); drop.style.background="#222"; };
@@ -122,9 +128,9 @@
 
   const fx = {
     skew:  document.getElementById('fxSkew'),
+    vhs:   document.getElementById('fxVHS'),
     warp:  document.getElementById('fxWarp'),
     pixel: document.getElementById('fxPixel'),
-    tri:   document.getElementById('fxTri'),
     sort:  document.getElementById('fxSort'),
     sortV: document.getElementById('fxSortV'),
     glitch:document.getElementById('fxGlitch'),
@@ -132,6 +138,7 @@
     grain: document.getElementById('fxGrain'),
     leak:  document.getElementById('fxLeak'),
     color: document.getElementById('fxColor'),
+    hud:   document.getElementById('fxHUD'),
     invert:document.getElementById('fxInvert'),
   };
   const ui = {
@@ -153,6 +160,7 @@
     col2: document.getElementById('col2'),
     col2Amt: document.getElementById('col2Amt'),
     blend: document.getElementById('blend'),
+    hudAmt: document.getElementById('hudAmt'),
   };
 
   // GLSL helpers
@@ -172,11 +180,34 @@
   const fsSkew  = sh(gl.FRAGMENT_SHADER, COM+`
     uniform float uSkewX,uSkewY;
     void main(){
-      vec2 uv=vUV;
-      vec2 c=vec2(0.5);
-      vec2 d = uv - c;
-      uv = c + vec2(d.x + uSkewX*(d.y), d.y + uSkewY*(d.x));
+      vec2 uv=vUV; vec2 c=vec2(0.5); vec2 d=uv-c;
+      uv = c + vec2(d.x + uSkewX*d.y, d.y + uSkewY*d.x);
       gl_FragColor = texture2D(uTex, uv);
+    }
+  `);
+
+  const fsVHS = sh(gl.FRAGMENT_SHADER, COM+`
+    uniform float uAmt;
+    float n(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }
+    void main(){
+      vec2 uv=vUV;
+      float t=uTime;
+      // horizontal jitter lines
+      float line = floor(uv.y*uRes.y);
+      float j = (n(vec2(line,t*1.2)) - 0.5) * uAmt * 0.02;
+      uv.x += j;
+      // slight vertical roll
+      uv.y += (sin(t*0.2)*0.003)*uAmt;
+      // scanlines
+      float sl = 0.85 + 0.15*sin(uv.y*uRes.y*3.14159);
+      vec3 c = texture2D(uTex, uv).rgb * mix(1.0, sl, uAmt);
+      // chroma bleed
+      vec2 off=vec2(0.0015*uAmt, 0.0);
+      float r=texture2D(uTex,uv+off).r;
+      float g=texture2D(uTex,uv).g;
+      float b=texture2D(uTex,uv-off).b;
+      c = mix(c, vec3(r,g,b), 0.7);
+      gl_FragColor=vec4(c,1.0);
     }
   `);
 
@@ -207,19 +238,6 @@
     }
   `);
 
-  const fsTri = sh(gl.FRAGMENT_SHADER, COM+`
-    uniform float uCell,uRGB;
-    void main(){
-      vec2 grid=uRes/max(uCell,1.0); vec2 cell=vUV*grid; vec2 f=fract(cell); vec2 base=floor(cell)/grid; vec2 A,B;
-      if(f.x+f.y<1.){ A=base; B=(floor(cell)+vec2(1.,0.))/grid; } else { A=(floor(cell)+vec2(1.,1.))/grid; B=(floor(cell)+vec2(0.,1.))/grid; }
-      float bias=.5+.5*sin((base.x+base.y)*12. + uTime*.8);
-      vec2 uvt=mix(A,B,bias);
-      vec2 off=vec2(.003)*uRGB;
-      float r=texture2D(uTex,uvt+off).r, g=texture2D(uTex,uvt).g, b=texture2D(uTex,uvt-off).b;
-      gl_FragColor=vec4(r,g,b,1.0);
-    }
-  `);
-
   const fsSort = sh(gl.FRAGMENT_SHADER, COM+`
     uniform float uWin,uTh; uniform int uVertical;
     float lum(vec3 c){ return dot(c, vec3(0.2126,0.7152,0.0722)); }
@@ -233,9 +251,9 @@
         if(L > uTh && L > bestL){ bestL=L; best=c; }
       }
       vec3 outc = (bestL>0.) ? mix(base.rgb,best,0.85) : base.rgb;
-      gl_FragColor=vec4(outc,1.0);
+      gl.FragColor=vec4(outc,1.0);
     }
-  `);
+  `.replace('gl.FragColor','gl_FragColor')); // (just guarding accidental typo)
 
   const fsGlitch = sh(gl.FRAGMENT_SHADER, COM+`
     uniform float uAmt,uBlk,uPr; // 0..1 each
@@ -245,15 +263,11 @@
       float line = step(1.0-uPr, n(vec2(floor(uv.y* uRes.y), floor(uTime*2.0))));
       float jitter = (n(vec2(uv.y*37.2, uTime)) - 0.5) * uAmt * 0.08;
       uv.x += line * jitter;
-
-      // random block shift
       float nb = n(floor(uv*8.0)+floor(uTime));
       if(nb > 1.0 - uPr*0.6){
         vec2 off = vec2( (n(vec2(nb,uv.y))-0.5)*uBlk*0.15, (n(vec2(nb,uv.x))-0.5)*uBlk*0.05 );
         uv += off;
       }
-
-      // subtle channel desync
       vec2 ch = vec2(0.002)*uAmt;
       float r=texture2D(uTex, uv+ch).r, g=texture2D(uTex, uv).g, b=texture2D(uTex, uv-ch).b;
       gl_FragColor=vec4(r,g,b,1.0);
@@ -301,20 +315,33 @@
     }
   `);
 
+  // HUD compositor: base (uTex) + uHUD (unit=1) with alpha * uAmt
+  const fsHUD = sh(gl.FRAGMENT_SHADER, COM+`
+    uniform sampler2D uHUD; uniform float uAmt;
+    void main(){
+      vec4 base = texture2D(uTex, vUV);
+      vec4 hud  = texture2D(uHUD, vUV);
+      float a = hud.a * uAmt;
+      vec3 outc = mix(base.rgb, hud.rgb, a);
+      gl_FragColor = vec4(outc, 1.0);
+    }
+  `);
+
   const fsInv  = sh(gl.FRAGMENT_SHADER, COM+`void main(){ vec4 c=texture2D(uTex,vUV); gl_FragColor=vec4(1.0-c.rgb,c.a); }`);
 
   const P = {
     copy : prog(sh(gl.VERTEX_SHADER,VS), fsCopy),
     skew : prog(sh(gl.VERTEX_SHADER,VS), fsSkew),
+    vhs  : prog(sh(gl.VERTEX_SHADER,VS), fsVHS),
     warp : prog(sh(gl.VERTEX_SHADER,VS), fsWarp),
     pixel: prog(sh(gl.VERTEX_SHADER,VS), fsPixel),
-    tri  : prog(sh(gl.VERTEX_SHADER,VS), fsTri),
     sort : prog(sh(gl.VERTEX_SHADER,VS), fsSort),
     glitch:prog(sh(gl.VERTEX_SHADER,VS), fsGlitch),
     rgb  : prog(sh(gl.VERTEX_SHADER,VS), fsRGB),
     grain: prog(sh(gl.VERTEX_SHADER,VS), fsGrain),
     leak : prog(sh(gl.VERTEX_SHADER,VS), fsLeak),
     color: prog(sh(gl.VERTEX_SHADER,VS), fsColor),
+    hud  : prog(sh(gl.VERTEX_SHADER,VS), fsHUD),
     inv  : prog(sh(gl.VERTEX_SHADER,VS), fsInv),
   };
 
@@ -359,6 +386,10 @@
   function setCanvasSize(w,h){
     canvas.width=w; canvas.height=h; gl.viewport(0,0,w,h);
     makeRT(w,h);
+    // also resize HUD canvas & reupload once
+    hudCanvas.width = w; hudCanvas.height = h;
+    gl.bindTexture(gl.TEXTURE_2D, hudTex);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
   }
 
   // source texture
@@ -368,6 +399,65 @@
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+
+  // HUD (2D canvas -> texture unit 1)
+  const hudCanvas = document.createElement('canvas');
+  const hudCtx = hudCanvas.getContext('2d');
+  const hudTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, hudTex);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+
+  const phrases = [
+    'error','failure','exe','system crash',':(','critical error','quit','retry','stop','cancel',
+    '1','0','!','?','ACCESS DENIED','FATAL','OVERFLOW','STACK TRACE','REBOOT'
+  ];
+
+  function drawHUD(t){
+    const w=hudCanvas.width, h=hudCanvas.height;
+    if(!w||!h) return;
+    hudCtx.clearRect(0,0,w,h);
+
+    // Binary rain columns
+    const colW = Math.max(14, Math.floor(w/40));
+    const cols = Math.ceil(w/colW);
+    hudCtx.font = `${Math.floor(colW*0.9)}px monospace`;
+    hudCtx.textBaseline = 'top';
+    for(let c=0;c<cols;c++){
+      const x = c*colW + 2;
+      const speed = 30 + (c*7 % 50);
+      const yOff = Math.floor((t*speed + c*23) % (colW*4));
+      for(let r=-4;r<Math.ceil(h/colW)+4;r++){
+        const y = r*colW + yOff;
+        if(y<-colW || y>h) continue;
+        const bit = (Math.random()<0.5) ? '1' : '0';
+        hudCtx.fillStyle = `rgba(0,255,120,${0.12 + 0.14*Math.random()})`;
+        hudCtx.fillText(bit, x, y);
+      }
+    }
+
+    // Random popups
+    if(Math.random()<0.15){
+      const txt = phrases[Math.floor(Math.random()*phrases.length)].toUpperCase();
+      const fs = Math.floor(18 + Math.random()*36);
+      hudCtx.font = `bold ${fs}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+      const x = Math.random()*(w-200);
+      const y = Math.random()*(h-60);
+      hudCtx.fillStyle = 'rgba(255,60,60,0.85)';
+      hudCtx.fillText(txt, x+1, y+1);
+      hudCtx.fillStyle = 'rgba(255,240,240,0.95)';
+      hudCtx.fillText(txt, x, y);
+    }
+
+    // upload HUD texture (unit 1)
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, hudTex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,hudCanvas);
+    gl.activeTexture(gl.TEXTURE0);
+  }
 
   // placeholder
   (function(){
@@ -429,6 +519,9 @@
       gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,vid);
     }
 
+    // update HUD texture
+    drawHUD(performance.now()/1000);
+
     // ping-pong
     let read = srcTex, writeFB = fbA, writeTex = texA;
     const swap = ()=>{ const tmpTex = writeTex; writeTex = (writeTex===texA?texB:texA); writeFB = (writeFB===fbA?fbB:fbA); read = tmpTex; };
@@ -441,7 +534,14 @@
       }); swap();
     }
 
-    // 1) Warp
+    // 1) VHS
+    if(fx.vhs.checked){
+      drawTo(read, writeFB, P.vhs, (p)=>{
+        gl.uniform1f(gl.getUniformLocation(p,'uAmt'), 0.6);
+      }); swap();
+    }
+
+    // 2) Warp
     if(fx.warp.checked){
       drawTo(read, writeFB, P.warp, (p)=>{
         gl.uniform1f(gl.getUniformLocation(p,'uStr'), parseFloat(ui.str.value)/100);
@@ -450,17 +550,9 @@
       }); swap();
     }
 
-    // 2) Pixelate
+    // 3) Pixelate
     if(fx.pixel.checked){
       drawTo(read, writeFB, P.pixel, (p)=>{
-        gl.uniform1f(gl.getUniformLocation(p,'uCell'), parseFloat(ui.cell.value));
-        gl.uniform1f(gl.getUniformLocation(p,'uRGB'), parseFloat(ui.rgb.value)/100);
-      }); swap();
-    }
-
-    // 3) Triangles
-    if(fx.tri.checked){
-      drawTo(read, writeFB, P.tri, (p)=>{
         gl.uniform1f(gl.getUniformLocation(p,'uCell'), parseFloat(ui.cell.value));
         gl.uniform1f(gl.getUniformLocation(p,'uRGB'), parseFloat(ui.rgb.value)/100);
       }); swap();
@@ -517,10 +609,19 @@
       }); swap();
     }
 
-    // 10) Invert
-    if(fx.invert.checked){
-      drawTo(read, writeFB, P.inv); swap();
+    // 10) HUD overlay (text + 1010 rain)
+    if(fx.hud.checked){
+      drawTo(read, writeFB, P.hud, (p)=>{
+        const uHUD = gl.getUniformLocation(p,'uHUD');
+        gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, hudTex);
+        gl.uniform1i(uHUD, 1);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.uniform1f(gl.getUniformLocation(p,'uAmt'), parseFloat(ui.hudAmt.value)/100);
+      }); swap();
     }
+
+    // 11) Invert
+    if(fx.invert.checked){ drawTo(read, writeFB, P.inv); swap(); }
 
     // final to screen
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -547,72 +648,69 @@
     return [((n>>16)&255)/255, ((n>>8)&255)/255, (n&255)/255];
   }
 
-  // randomize
   function randomizeAll(){
-    // random toggles
-    for(const k in fx){
-      if(k==='invert'){ fx[k].checked = Math.random()<0.25; }
-      else if(k==='grain'||k==='rgb'){ fx[k].checked = Math.random()<0.8; }
-      else fx[k].checked = Math.random()<0.6;
+    // toggles
+    const bias=(p)=>Math.random()<p;
+    fx.skew.checked=bias(.5);
+    fx.vhs.checked=bias(.6);
+    fx.warp.checked=bias(.8);
+    fx.pixel.checked=bias(.6);
+    fx.sort.checked=bias(.5);
+    fx.sortV.checked=bias(.3);
+    fx.glitch.checked=bias(.7);
+    fx.rgb.checked=bias(.9);
+    fx.grain.checked=bias(.9);
+    fx.leak.checked=bias(.6);
+    fx.color.checked=bias(.7);
+    fx.hud.checked=bias(.9);
+    fx.invert.checked=bias(.2);
+
+    // sliders
+    const ri=(a,b)=>Math.floor(a+Math.random()*(b-a+1));
+    ui.cell.value=ri(4,96);
+    ui.str.value=ri(10,80);
+    ui.rgb.value=ri(0,70);
+    ui.grain.value=ri(0,40);
+    ui.speed.value=ri(20,80);
+    ui.leak.value=ri(0,60);
+    ui.sortWin.value=ri(8,128);
+    ui.sortTh.value=ri(25,80);
+    ui.skewX.value=ri(-40,40);
+    ui.skewY.value=ri(-40,40);
+    ui.glitchAmt.value=ri(10,80);
+    ui.glitchBlk.value=ri(10,80);
+    ui.glitchPr.value=ri(5,70);
+    ui.col1.value=randomColor();
+    ui.col2.value=randomColor();
+    ui.col1Amt.value=ri(10,70);
+    ui.col2Amt.value=ri(5,60);
+    ui.hudAmt.value=ri(25,80);
+    ui.blend.value=String(ri(0,2));
+  }
+  function randomColor(){ const r=rand(0,255),g=rand(0,255),b=rand(0,255); return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+  function rand(a,b){ return Math.floor(a+Math.random()*(b-a+1)); }
+
+  function applyPreset(name){
+    // base
+    for(const k in fx) fx[k].checked=false;
+    fx.warp.checked=true; fx.rgb.checked=true; fx.grain.checked=true; fx.hud.checked=true;
+
+    if(name==='vhs'){
+      fx.vhs.checked=true; fx.glitch.checked=true; fx.pixel.checked=false; fx.sort.checked=false; fx.sortV.checked=false; fx.color.checked=false; fx.leak.checked=true;
+      ui.rgb.value=30; ui.grain.value=18; ui.speed.value=45; ui.str.value=28; ui.cell.value=24; ui.leak.value=18;
+      ui.glitchAmt.value=35; ui.glitchBlk.value=25; ui.glitchPr.value=20;
+      ui.hudAmt.value=40;
     }
-    // sensible ranges
-    ui.cell.value   = randInt(4,96);
-    ui.str.value    = randInt(10,80);
-    ui.rgb.value    = randInt(0,70);
-    ui.grain.value  = randInt(0,40);
-    ui.speed.value  = randInt(20,80);
-    ui.leak.value   = randInt(0,60);
-    ui.sortWin.value= randInt(8,128);
-    ui.sortTh.value = randInt(30,80);
-    ui.skewX.value  = randInt(-40,40);
-    ui.skewY.value  = randInt(-40,40);
-    ui.glitchAmt.value = randInt(10,80);
-    ui.glitchBlk.value = randInt(10,80);
-    ui.glitchPr.value  = randInt(5,70);
-    ui.col1.value = randomColor();
-    ui.col2.value = randomColor();
-    ui.col1Amt.value = randInt(10,70);
-    ui.col2Amt.value = randInt(5,60);
-    ui.blend.value = String(randInt(0,2));
-  }
-  function randInt(a,b){ return Math.floor(a + Math.random()*(b-a+1)); }
-  function randomColor(){
-    const r=randInt(0,255), g=randInt(0,255), b=randInt(0,255);
-    return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
-  }
-
-  // initial placeholder
-  function initPlaceholder(){
-    const ph=document.createElement('canvas'); ph.width=640; ph.height=360;
-    const ctx=ph.getContext('2d'); const g=ctx.createLinearGradient(0,0,640,360);
-    g.addColorStop(0,'#222'); g.addColorStop(1,'#333'); ctx.fillStyle=g; ctx.fillRect(0,0,640,360);
-    setCanvasSize(ph.width,ph.height);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
-    gl.bindTexture(gl.TEXTURE_2D,srcTex);
-    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,ph);
-  }
-
-  // support funcs used above (after hoist)
-  function setCanvasSize(w,h){
-    canvas.width=w; canvas.height=h; gl.viewport(0,0,w,h);
-    makeRT(w,h);
-  }
-  function makeRT(w,h){
-    function mkTex(){
-      const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t);
-      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
-      return t;
+    if(name==='cyber'){
+      fx.glitch.checked=true; fx.pixel.checked=true; fx.color.checked=true; fx.leak.checked=true; fx.vhs.checked=false;
+      ui.cell.value=18; ui.str.value=55; ui.rgb.value=60; ui.grain.value=10; ui.speed.value=70; ui.leak.value=28;
+      ui.glitchAmt.value=40; ui.glitchBlk.value=35; ui.glitchPr.value=30;
+      ui.col1.value='#ff00aa'; ui.col1Amt.value=55;
+      ui.col2.value='#00e1ff'; ui.col2Amt.value=35;
+      ui.blend.value='0'; // Screen
+      ui.hudAmt.value=55;
     }
-    function mkFBO(t){ const f=gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER,f);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0); return f; }
-    texA=mkTex(); texB=mkTex(); fbA=mkFBO(texA); fbB=mkFBO(texB); gl.bindFramebuffer(gl.FRAMEBUFFER,null);
   }
-
-  // initialize placeholder texture (already done earlier)
 })();
 </script>
 </body>
