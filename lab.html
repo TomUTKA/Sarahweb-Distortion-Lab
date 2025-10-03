@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sarahweb — Distortion Lab (v0.4.1)</title>
+<style>
+  :root{--panel:#111;--acc:#2a3140;--text:#e5e7eb;--muted:#aab3c5;--outline:#2f3747;}
+  *{box-sizing:border-box}
+  body{margin:0;background:#0b0c10;color:var(--text);font-family:system-ui,Segoe UI,Roboto,Arial}
+  header{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid #222;background:var(--panel);position:sticky;top:0;z-index:10}
+  h1{font-size:16px;margin:0}
+  .btn{background:#1f2430;border:1px solid var(--acc);color:var(--text);padding:6px 10px;border-radius:6px;cursor:pointer}
+  .btn:hover{background:#2b3245}
+  #drop{outline:2px dashed var(--outline);padding:14px;text-align:center;border-radius:10px;margin:10px;color:#9aa3b2}
+  canvas,video{display:block;margin:10px auto;max-width:95vw;max-height:75vh;background:#000;border-radius:10px}
+  #status{position:fixed;left:10px;bottom:10px;background:#111a;padding:8px 10px;border:1px solid #333;border-radius:8px;font:12px/1.3 monospace;max-width:58vw;white-space:pre-wrap}
+  #orderPanel{position:fixed;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;background:#0f1320d9;border:1px solid #2b2f3a;border-radius:10px;padding:8px;width:240px;max-height:70vh;overflow:auto}
+  #orderPanel h3{margin:0 0 6px 0;font-size:13px;color:var(--muted)}
+  #orderList{font:12px/1.4 monospace;color:#cfe1ff; white-space:pre}
+  details{background:#0d111a;border:1px solid #262b36;border-radius:10px;padding:8px;margin:8px 10px}
+  details>summary{cursor:pointer;list-style:none}
+  details>summary::-webkit-details-marker{display:none}
+  summary{display:flex;align-items:center;gap:8px;font-weight:600}
+  .row{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+  .row>label{font-size:12px;display:flex;flex-direction:column;align-items:flex-start}
+  input[type=range]{width:130px}
+  input[type=color],select{height:28px}
+  .checks{display:flex;flex-wrap:wrap;gap:10px}
+  .checks label{flex-direction:row;gap:6px}
+  #banner{position:sticky;top:0;text-align:center;padding:4px 10px;font:12px/1.3 monospace;background:#0f172a;color:#a7f3d0;border-bottom:1px solid #1f2937}
+</style>
+</head>
+<body>
+<div id="banner"></div>
+<header>
+  <a class="navlink" style="margin-right:8px;color:#93c5fd;text-decoration:none" href="./index.html">⟵ Home</a>
+  <h1>Sarahweb — v0.4.1</h1>
+  <button id="btnUpload" class="btn">Upload</button>
+  <input id="file" type="file" accept="image/*" style="display:none">
+  <button id="btnCam" class="btn">Webcam</button>
+  <button id="btnSave" class="btn">Download PNG</button>
+  <button id="btnRandom" class="btn">🎲 Randomize</button>
+  <button id="btnShuffle" class="btn">🔀 Shuffle Order</button>
+  <button id="btnVHS" class="btn">Preset: VHS</button>
+  <button id="btnCyber" class="btn">Preset: Cyberpink</button>
+</header>
+
+<!-- Compact controls -->
+<details open>
+  <summary>🎛️ Effects (toggle stack)</summary>
+  <div class="checks">
+    <label><input type="checkbox" id="fxOrient" checked>Source Orient</label>
+    <label><input type="checkbox" id="fxSkew">Skew</label>
+    <label><input type="checkbox" id="fxCRT">CRT Curve</label>
+    <label><input type="checkbox" id="fxVHS">VHS</label>
+    <label><input type="checkbox" id="fxWarp" checked>Warp</label>
+    <label><input type="checkbox" id="fxPixel">Pixelate</label>
+    <label><input type="checkbox" id="fxSort">Pixel Sort</label>
+    <label><input type="checkbox" id="fxSortV">Sort Vertical</label>
+    <label><input type="checkbox" id="fxGlitch">Glitch</label>
+    <label><input type="checkbox" id="fxPoster">Posterize</label>
+    <label><input type="checkbox" id="fxEdge">Edge</label>
+    <label><input type="checkbox" id="fxGlow">Glow</label>
+    <label><input type="checkbox" id="fxHalftone">Halftone</label>
+    <label><input type="checkbox" id="fxHue">Hue Rotate</label>
+    <label><input type="checkbox" id="fxTilt">Tilt-Shift</label>
+    <label><input type="checkbox" id="fxRGB" checked>RGB Split</label>
+    <label><input type="checkbox" id="fxGrain" checked>Grain</label>
+    <label><input type="checkbox" id="fxVign">Vignette</label>
+    <label><input type="checkbox" id="fxLeak">Light Leak</label>
+    <label><input type="checkbox" id="fxColor">Colorize (2×)</label>
+    <label><input type="checkbox" id="fxHUDtxt">HUD Text</label>
+    <label><input type="checkbox" id="fxHUDbin">Binary 1010</label>
+    <label><input type="checkbox" id="fxInvert">Invert</label>
+  </div>
+</details>
+
+<details>
+  <summary>⚙️ Main Controls</summary>
+  <div class="row">
+    <label>Cell <input id="cell" type="range" min="2" max="128" value="24"></label>
+    <label>Distort <input id="strength" type="range" min="0" max="100" value="40"></label>
+    <label>RGB <input id="rgb" type="range" min="0" max="100" value="35"></label>
+    <label>Grain <input id="grain" type="range" min="0" max="100" value="12"></label>
+    <label>Speed <input id="speed" type="range" min="0" max="100" value="50"></label>
+    <label>Leak <input id="leak" type="range" min="0" max="100" value="20"></label>
+  </div>
+</details>
+
+<details>
+  <summary>🧱 Sort, Skew & Orient</summary>
+  <div class="row">
+    <label>Skew X <input id="skewX" type="range" min="-100" max="100" value="0"></label>
+    <label>Skew Y <input id="skewY" type="range" min="-100" max="100" value="0"></label>
+    <label>SortWin <input id="sortWin" type="range" min="4" max="128" value="48"></label>
+    <label>SortTh <input id="sortTh" type="range" min="0" max="100" value="55"></label>
+    <label>Source Orientation
+      <select id="orient">
+        <option value="0">Normal</option>
+        <option value="1">Mirror X</option>
+        <option value="2">Mirror Y</option>
+        <option value="3">Rotate 180</option>
+        <option value="4">Random per load</option>
+      </select>
+    </label>
+  </div>
+</details>
+
+<details>
+  <summary>🧪 Glitch & Color</summary>
+  <div class="row">
+    <label>Glitch <input id="glitchAmt" type="range" min="0" max="100" value="35"></label>
+    <label>Blocks <input id="glitchBlk" type="range" min="0" max="100" value="35"></label>
+    <label>Chaos <input id="glitchPr" type="range" min="0" max="100" value="25"></label>
+    <label class="inline">Col1 <input id="col1" type="color" value="#ff00aa"></label>
+    <label>Amt1 <input id="col1Amt" type="range" min="0" max="100" value="50"></label>
+    <label class="inline">Col2 <input id="col2" type="color" value="#00e1ff"></label>
+    <label>Amt2 <input id="col2Amt" type="range" min="0" max="100" value="35"></label>
+    <label>Blend
+      <select id="blend">
+        <option value="0">Screen</option>
+        <option value="1">Multiply</option>
+        <option value="2">Overlay</option>
+      </select>
+    </label>
+    <label>Hue <input id="hueAmt" type="range" min="0" max="360" value="0"></label>
+  </div>
+</details>
+
+<details>
+  <summary>🖥️ HUD (Text & 1010)</summary>
+  <div class="row">
+    <label>Text Duration (ms) <input id="hudDur" type="range" min="200" max="4000" value="1400"></label>
+    <label>Text Rate <input id="hudRate" type="range" min="0" max="100" value="30"></label>
+    <label>Text Direction
+      <select id="hudDir">
+        <option value="rnd">Random</option>
+        <option value="up">Up</option>
+        <option value="right">Right</option>
+        <option value="down">Down</option>
+        <option value="left">Left</option>
+      </select>
+    </label>
+    <label>Binary Amt <input id="hudBinAmt" type="range" min="0" max="100" value="45"></label>
+  </div>
+</details>
+
+<details>
+  <summary>🌈 Post</summary>
+  <div class="row">
+    <label>Poster Steps <input id="posterSteps" type="range" min="2" max="16" value="6"></label>
+    <label>Glow Amt <input id="glowAmt" type="range" min="0" max="100" value="30"></label>
+    <label>Vignette <input id="vignAmt" type="range" min="0" max="100" value="25"></label>
+    <label>CRT Amt <input id="crtAmt" type="range" min="0" max="100" value="30"></label>
+    <label>Tilt Strength <input id="tiltAmt" type="range" min="0" max="100" value="35"></label>
+    <label>Halftone Size <input id="halfSize" type="range" min="4" max="40" value="12"></label>
+  </div>
+</details>
+
+<div id="drop">Drop an image here or click Upload. Webcam needs https (GitHub Pages) or http://localhost.</div>
+<canvas id="gl"></canvas>
+<video id="vid" autoplay playsinline muted style="display:none"></video>
+
+<div id="orderPanel">
+  <h3>Pipeline Order</h3>
+  <div id="orderList"></div>
+  <button id="btnShuffle2" class="btn">🔀 Shuffle</button>
+</div>
+
+<div id="status"></div>
+
+<script>
+(() => {
+  const banner = document.getElementById('banner');
+  const status = (m)=>{ document.getElementById('status').textContent = m; };
+  const showOrder = (arr)=>{ document.getElementById('orderList').textContent = arr.join('\\n'); };
+
+  const canvas = document.getElementById('gl');
+  const gl = canvas.getContext('webgl');
+  const vid = document.getElementById('vid');
+  const drop = document.getElementById('drop');
+
+  const isSecure = location.protocol === 'https:' || location.hostname === 'localhost';
+  const isGhPages = /\.github\.io$/i.test(location.hostname);
+  banner.textContent = isGhPages
+    ? 'Running on GitHub Pages (secure). Webcam allowed. Uploads OK.'
+    : (isSecure ? 'Secure origin detected. Webcam allowed.' : 'Not secure origin. Webcam is disabled. Use https or localhost.');
+
+  if(!gl){ status('WebGL not available.'); return; }
+
+  // UI ELEMENTS
+  const file = document.getElementById('file');
+  const $ = (id)=>document.getElementById(id);
+  const fx = {
+    orient:$('fxOrient'), skew:$('fxSkew'), crt:$('fxCRT'), vhs:$('fxVHS'), warp:$('fxWarp'),
+    pixel:$('fxPixel'), sort:$('fxSort'), sortV:$('fxSortV'), glitch:$('fxGlitch'),
+    poster:$('fxPoster'), edge:$('fxEdge'), glow:$('fxGlow'),
+    halftone:$('fxHalftone'), hue:$('fxHue'), tilt:$('fxTilt'),
+    rgb:$('fxRGB'), grain:$('fxGrain'), vign:$('fxVign'), leak:$('fxLeak'),
+    color:$('fxColor'), hudtxt:$('fxHUDtxt'), hudbin:$('fxHUDbin'), invert:$('fxInvert')
+  };
+  const ui = {
+    cell:$('cell'), str:$('strength'), rgb:$('rgb'), grain:$('grain'), speed:$('speed'), leak:$('leak'),
+    sortWin:$('sortWin'), sortTh:$('sortTh'),
+    skewX:$('skewX'), skewY:$('skewY'),
+    orientSel:$('orient'),
+    glitchAmt:$('glitchAmt'), glitchBlk:$('glitchBlk'), glitchPr:$('glitchPr'),
+    col1:$('col1'), col1Amt:$('col1Amt'), col2:$('col2'), col2Amt:$('col2Amt'), blend:$('blend'),
+    hueAmt:$('hueAmt'),
+    hudDur:$('hudDur'), hudRate:$('hudRate'), hudDir:$('hudDir'), hudBinAmt:$('hudBinAmt'),
+    posterSteps:$('posterSteps'), glowAmt:$('glowAmt'), vignAmt:$('vignAmt'), crtAmt:$('crtAmt'),
+    tiltAmt:$('tiltAmt'), halfSize:$('halfSize'),
+  };
+
+  // BUTTONS
+  $('btnUpload').onclick = ()=>file.click();
+  $('btnCam').onclick = startCam;
+  $('btnSave').onclick = savePNG;
+  $('btnRandom').onclick = randomizeAll;
+  $('btnShuffle').onclick = shuffleOrder;
+  $('btnShuffle2').onclick = shuffleOrder;
+  $('btnVHS').onclick = ()=>applyPreset('vhs');
+  $('btnCyber').onclick = ()=>applyPreset('cyber');
+  file.onchange = e => { if(e.target.files[0]) loadFile(e.target.files[0]); };
+
+  drop.ondragover = e => { e.preventDefault(); drop.style.background="#222"; };
+  drop.ondragleave = e => { e.preventDefault(); drop.style.background=""; };
+  drop.ondrop = e => { e.preventDefault(); drop.style.background=""; if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); };
+
+  // ORDER
+  let order = [
+    'orient','skew','crt','vhs','warp','pixel','sort','glitch',
+    'poster','edge','glow','halftone','hue','tilt','rgb','grain','vign','leak','color','hudtxt','hudbin','invert'
+  ];
+  const updateOrderPanel = ()=>showOrder(order);
+  updateOrderPanel();
+
+  // SHADER HELPERS
+  function sh(type,src){ const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
+    if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){ console.error(gl.getShaderInfoLog(s)); throw new Error(gl.getShaderInfoLog(s)); } return s; }
+  function prog(vs,fs){ const p=gl.createProgram(); gl.attachShader(p,vs); gl.attachShader(p,fs); gl.linkProgram(p);
+    if(!gl.getProgramParameter(p,gl.LINK_STATUS)){ console.error(gl.getProgramInfoLog(p)); throw new Error(gl.getProgramInfoLog(p)); } return p; }
+
+  const VS = `attribute vec2 aPos; attribute vec2 aUV; varying vec2 vUV; void main(){ vUV=aUV; gl_Position=vec4(aPos,0.,1.); }`;
+  const COM = `precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform vec2 uRes; uniform float uTime;`;
+
+  const fsCopy = sh(gl.FRAGMENT_SHADER, COM+`void main(){ gl_FragColor=texture2D(uTex,vUV); }`);
+
+  // Source ORIENT (flip/mirror/rotate)
+  const fsOrient = sh(gl.FRAGMENT_SHADER, COM+`
+    uniform int uMode; // 0=normal 1=mirrorX 2=mirrorY 3=rot180
+    vec2 map(vec2 uv){
+      if(uMode==1) return vec2(1.0-uv.x, uv.y);
+      if(uMode==2) return vec2(uv.x, 1.0-uv.y);
+      if(uMode==3) return vec2(1.0-uv.x, 1.0-uv.y);
+      return uv;
+    }
+    void main(){ gl_FragColor=texture2D(uTex, map(vUV)); }
+  `);
+
+  const fsSkew  = sh(gl.FRAGMENT_SHADER, COM+`uniform float uSkewX,uSkewY; void main(){ vec2 uv=vUV, c=vec2(.5), d=uv-c; uv=c+vec2(d.x+uSkewX*d.y, d.y+uSkewY*d.x); gl.FragColor=texture2D(uTex,uv); }`.replace('gl.FragColor','gl_FragColor'));
+  const fsCRT   = sh(gl.FRAGMENT_SHADER, COM+`uniform float uAmt; void main(){ vec2 uv=vUV*2.-1.; float a=dot(uv,uv); vec2 w=uv*(1.+uAmt*.25*a); w=w*.5+.5; vec3 c=texture2D(uTex,w).rgb; float v=smoothstep(1.3,.6,a); c*=mix(1.,v,uAmt*.8); gl_FragColor=vec4(c,1.); }`);
+  const fsVHS   = sh(gl.FRAGMENT_SHADER, COM+`
+    uniform float uAmt; float n(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }
+    void main(){ vec2 uv=vUV; float t=uTime; float line=floor(uv.y*uRes.y);
+      float j=(n(vec2(line,t*1.2))-.5)*uAmt*0.02; uv.x+=j; uv.y+=sin(t*0.2)*0.003*uAmt;
+      float sl=0.85+0.15*sin(uv.y*uRes.y*3.14159); vec3 c=texture2D(uTex,uv).rgb*mix(1.,sl,uAmt);
+      vec2 off=vec2(0.0015*uAmt,0.); c=mix(c, vec3(texture2D(uTex,uv+off).r, texture2D(uTex,uv).g, texture2D(uTex,uv-off).b), 0.7);
+      gl_FragColor=vec4(c,1.); }`);
+  const fsWarp  = sh(gl.FRAGMENT_SHADER, COM+`uniform float uStr,uRGB,uSpeed; vec2 dir(float t){ return vec2(cos(t*.7),sin(t*.9)); }
+    void main(){ float t=uTime*uSpeed; vec2 uv=vUV; float w1=sin(uv.y*12.+1.2*t), w2=cos(uv.x*9.-1.1*t), w3=sin((uv.x+uv.y)*6.-.7*t);
+      uv+=vec2(w1*w2,w3)*(uStr*.035); vec2 c=vec2(.5), d=uv-c; float r=length(d); float a=atan(d.y,d.x)+r*(uStr*.35)*sin(t*.4);
+      uv=c+vec2(cos(a),sin(a))*r; vec2 off=dir(t)*(uRGB*.004);
+      gl_FragColor=vec4(texture2D(uTex,uv+off).r, texture2D(uTex,uv).g, texture2D(uTex,uv-off).b,1.); }`);
+  const fsPixel = sh(gl.FRAGMENT_SHADER, COM+`uniform float uCell,uRGB; void main(){ vec2 grid=uRes/max(uCell,1.); vec2 uvq=floor(vUV*grid)/grid; vec2 off=vec2(0.707)*(uRGB*0.004); gl_FragColor=vec4(texture2D(uTex,uvq+off).r,texture2D(uTex,uvq).g,texture2D(uTex,uvq-off).b,1.); }`);
+  const fsSort  = sh(gl.FRAGMENT_SHADER, COM+`uniform float uWin,uTh; uniform int uVertical; float lum(vec3 c){return dot(c,vec3(.2126,.7152,.0722));}
+    void main(){ vec4 base=texture2D(uTex,vUV); vec3 best=base.rgb; float bestL=-1.; float steps=uWin; vec2 stepUV=(uVertical==1)?vec2(0.,1./uRes.y):vec2(1./uRes.x,0.);
+      for(float i=1.; i<=128.; i+=1.){ if(i>steps) break; vec3 c=texture2D(uTex,vUV+stepUV*i).rgb; float L=lum(c); if(L>uTh && L>bestL){bestL=L; best=c;} }
+      gl_FragColor=vec4((bestL>0.)?mix(base.rgb,best,.85):base.rgb,1.); }`);
+  const fsGlitch= sh(gl.FRAGMENT_SHADER, COM+`uniform float uAmt,uBlk,uPr; float n(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);} void main(){ vec2 uv=vUV; float line=step(1.-uPr,n(vec2(floor(uv.y*uRes.y),floor(uTime*2.)))); float jitter=(n(vec2(uv.y*37.2,uTime))-.5)*uAmt*.08; uv.x+=line*jitter; float nb=n(floor(uv*8.)+floor(uTime)); if(nb>1.-uPr*.6){ vec2 off=vec2((n(vec2(nb,uv.y))-.5)*uBlk*.15,(n(vec2(nb,uv.x))-.5)*uBlk*.05); uv+=off; } vec2 ch=vec2(.002)*uAmt; gl_FragColor=vec4(texture2D(uTex,uv+ch).r,texture2D(uTex,uv).g,texture2D(uTex,uv-ch).b,1.);} `);
+  const fsPoster= sh(gl.FRAGMENT_SHADER, COM+`uniform float uSteps; void main(){ vec3 c=texture2D(uTex,vUV).rgb; c=floor(c*uSteps)/uSteps; gl_FragColor=vec4(c,1.);} `);
+  const fsEdge  = sh(gl.FRAGMENT_SHADER, COM+`float g(vec2 uv){return dot(texture2D(uTex,uv).rgb,vec3(.299,.587,.114));} void main(){ vec2 p=1./uRes; float sx=-g(vUV+vec2(-p.x,-p.y))-2.0*g(vUV+vec2(-p.x,0.))-g(vUV+vec2(-p.x,p.y))+g(vUV+vec2(p.x,-p.y))+2.0*g(vUV+vec2(p.x,0.))+g(vUV+vec2(p.x,p.y)); float sy=-g(vUV+vec2(-p.x,-p.y))-2.0*g(vUV+vec2(0.,-p.y))-g(vUV+vec2(p.x,-p.y))+g(vUV+vec2(-p.x,p.y))+2.0*g(vUV+vec2(0.,p.y))+g(vUV+vec2(p.x,p.y)); float e=clamp(length(vec2(sx,sy)),0.,1.); vec3 base=texture2D(uTex,vUV).rgb; gl_FragColor=vec4(mix(base,vec3(1.),e*.9),1.);} `);
+  const fsGlow  = sh(gl.FRAGMENT_SHADER, COM+`uniform float uAmt; vec3 blur(vec2 uv){ vec2 p=1./uRes; vec3 s=vec3(0.); s+=texture2D(uTex,uv).rgb*.147761; s+=texture2D(uTex,uv+p*vec2(1,0)).rgb*.118318; s+=texture2D(uTex,uv-p*vec2(1,0)).rgb*.118318; s+=texture2D(uTex,uv+p*vec2(0,1)).rgb*.118318; s+=texture2D(uTex,uv-p*vec2(0,1)).rgb*.118318; s+=texture2D(uTex,uv+p*vec2(1,1)).rgb*.094741; s+=texture2D(uTex,uv-p*vec2(1,1)).rgb*.094741; s+=texture2D(uTex,uv+p*vec2(1,-1)).rgb*.094741; s+=texture2D(uTex,uv-p*vec2(1,-1)).rgb*.094741; return s;} void main(){ vec3 b=blur(vUV); vec3 base=texture2D(uTex,vUV).rgb; vec3 glow=max(b-base,0.); gl_FragColor=vec4(mix(base,base+glow*2.,uAmt),1.);} `);
+  const fsHalftone = sh(gl.FRAGMENT_SHADER, COM+`
+    uniform float uSize;
+    float lum(vec3 c){return dot(c,vec3(0.299,0.587,0.114));}
+    void main(){
+      vec2 pt = vUV*uRes/uSize; vec2 gv = fract(pt)-0.5; vec2 id = floor(pt);
+      float a = lum(texture2D(uTex,(id+0.5)*uSize/uRes).rgb);
+      float r = (1.0-a)*0.5; // darker = larger dot
+      float d = step(length(gv), r);
+      vec3 base = texture2D(uTex,vUV).rgb;
+      gl_FragColor = vec4(mix(base, vec3(0.0), d*0.85),1.0);
+    }
+  `);
+  const fsHue = sh(gl.FRAGMENT_SHADER, COM+`
+    uniform float uDeg;
+    vec3 hue(vec3 c,float a){ // fast YIQ rotate
+      const mat3 toYIQ = mat3(0.299,0.587,0.114, 0.596,-0.274,-0.322, 0.211,-0.523,0.312);
+      const mat3 toRGB = mat3(1.0, 0.956, 0.621, 1.0, -0.272, -0.647, 1.0, -1.106, 1.703);
+      vec3 yiq = toYIQ * c;
+      float hue = atan(yiq.z, yiq.y) + a;
+      float chroma = sqrt(yiq.y*yiq.y + yiq.z*yiq.z);
+      vec3 yiq2 = vec3(yiq.x, chroma*cos(hue), chroma*sin(hue));
+      return clamp(toRGB * yiq2, 0.0, 1.0);
+    }
+    void main(){ vec3 col = texture2D(uTex,vUV).rgb; float a = radians(uDeg); gl_FragColor=vec4(hue(col,a),1.0); }
+  `);
+  const fsTilt = sh(gl.FRAGMENT_SHADER, COM+`
+    uniform float uAmt;
+    void main(){
+      float y=vUV.y;
+      float band = smoothstep(0.35,0.5,y) * (1.0 - smoothstep(0.5,0.65,y));
+      float blur = (1.0 - band) * uAmt; // 0..1
+      vec2 p=1.0/uRes;
+      vec3 s=texture2D(uTex,vUV).rgb * (1.0-0.6*blur);
+      s+=texture2D(uTex,vUV+p*vec2(1,0)).rgb*0.1*blur;
+      s+=texture2D(uTex,vUV+p*vec2(-1,0)).rgb*0.1*blur;
+      s+=texture2D(uTex,vUV+p*vec2(0,1)).rgb*0.1*blur;
+      s+=texture2D(uTex,vUV+p*vec2(0,-1)).rgb*0.1*blur;
+      gl_FragColor=vec4(s,1.0);
+    }
+  `);
+
+  const fsRGB   = sh(gl.FRAGMENT_SHADER, COM+`uniform float uAmt; void main(){ vec2 off=vec2(cos(uTime*.7),sin(uTime*.9))*(uAmt*.004); gl_FragColor=vec4(texture2D(uTex,vUV+off).r,texture2D(uTex,vUV).g,texture2D(uTex,vUV-off).b,1.);} `);
+  const fsGrain = sh(gl.FRAGMENT_SHADER, COM+`uniform float uAmt; float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);} void main(){ vec3 c=texture2D(uTex,vUV).rgb; float nn=h(vUV*vec2(128.,96.)+uTime); c+=(nn-.5)*(uAmt*.25); gl_FragColor=vec4(c,1.);} `);
+  const fsVign  = sh(gl.FRAGMENT_SHADER, COM+`uniform float uAmt; void main(){ vec2 uv=vUV*2.-1.; float d=dot(uv,uv); vec3 c=texture2D(uTex,(uv*.5+.5)).rgb; float v=smoothstep(1.2,.3,d); c*=mix(1.,v,uAmt); gl_FragColor=vec4(c,1.);} `);
+  const fsLeak  = sh(gl.FRAGMENT_SHADER, COM+`uniform float uAmt; void main(){ vec3 c=texture2D(uTex,vUV).rgb; float t=uTime*.2; vec2 p1=vec2(0.0)+0.3*vec2(sin(t*1.3),cos(t*1.1)); vec2 p2=vec2(1.0,0.0)+0.25*vec2(cos(t*1.7),sin(t*1.2)); float r1=smoothstep(.9,0.,distance(vUV,p1)), r2=smoothstep(.85,0.,distance(vUV,p2)); vec3 leak=vec3(1.,.6,.2)*r1 + vec3(.8,.2,.9)*r2; c=mix(c,c+leak,uAmt); gl_FragColor=vec4(c,1.);} `);
+  const fsColor = sh(gl.FRAGMENT_SHADER, COM+`uniform vec3 c1,c2; uniform float a1,a2; uniform int mode; vec3 screenBlend(vec3 b, vec3 s){return 1.-(1.-b)*(1.-s);} vec3 overlayBlend(vec3 b, vec3 s){return mix(2.*b*s,1.-2.*(1.-b)*(1.-s), step(0.5,b));} void main(){ vec3 col=texture2D(uTex,vUV).rgb; vec3 t1=mix(col,screenBlend(col,c1),a1); vec3 t2=(mode==0)?screenBlend(t1,c2):(mode==1)?(t1*c2):overlayBlend(t1,c2); col=mix(t1,t2,a2); gl_FragColor=vec4(col,1.);} `);
+  const fsHUDtxt= sh(gl.FRAGMENT_SHADER, COM+`uniform sampler2D uHUD; uniform float uAmt; void main(){ vec4 base=texture2D(uTex,vUV); vec4 hud=texture2D(uHUD,vUV); gl_FragColor=vec4(mix(base.rgb, hud.rgb, hud.a*uAmt),1.);} `);
+  const fsHUDbin= sh(gl.FRAGMENT_SHADER, COM+`uniform sampler2D uBIN; uniform float uAmt; void main(){ vec4 base=texture2D(uTex,vUV); vec4 bin=texture2D(uTex,vUV); bin = texture2D(uBIN,vUV); gl_FragColor=vec4(mix(base.rgb, base.rgb*0.6 + bin.rgb*1.4, uAmt*bin.a),1.);} `);
+  const fsInv   = sh(gl.FRAGMENT_SHADER, COM+`void main(){ vec4 c=texture2D(uTex,vUV); gl_FragColor=vec4(1.-c.rgb,c.a);} `);
+
+  const P = {
+    copy:prog(sh(gl.VERTEX_SHADER,VS),fsCopy),
+    orient:prog(sh(gl.VERTEX_SHADER,VS),fsOrient),
+    skew:prog(sh(gl.VERTEX_SHADER,VS),fsSkew),
+    crt:prog(sh(gl.VERTEX_SHADER,VS),fsCRT),
+    vhs:prog(sh(gl.VERTEX_SHADER,VS),fsVHS),
+    warp:prog(sh(gl.VERTEX_SHADER,VS),fsWarp),
+    pixel:prog(sh(gl.VERTEX_SHADER,VS),fsPixel),
+    sort:prog(sh(gl.VERTEX_SHADER,VS),fsSort),
+    glitch:prog(sh(gl.VERTEX_SHADER,VS),fsGlitch),
+    poster:prog(sh(gl.VERTEX_SHADER,VS),fsPoster),
+    edge:prog(sh(gl.VERTEX_SHADER,VS),fsEdge),
+    glow:prog(sh(gl.VERTEX_SHADER,VS),fsGlow),
+    halftone:prog(sh(gl.VERTEX_SHADER,VS),fsHalftone),
+    hue:prog(sh(gl.VERTEX_SHADER,VS),fsHue),
+    tilt:prog(sh(gl.VERTEX_SHADER,VS),fsTilt),
+    rgb:prog(sh(gl.VERTEX_SHADER,VS),fsRGB),
+    grain:prog(sh(gl.VERTEX_SHADER,VS),fsGrain),
+    vign:prog(sh(gl.VERTEX_SHADER,VS),fsVign),
+    leak:prog(sh(gl.VERTEX_SHADER,VS),fsLeak),
+    color:prog(sh(gl.VERTEX_SHADER,VS),fsColor),
+    hudtxt:prog(sh(gl.VERTEX_SHADER,VS),fsHUDtxt),
+    hudbin:prog(sh(gl.VERTEX_SHADER,VS),fsHUDbin),
+    inv:prog(sh(gl.VERTEX_SHADER,VS),fsInv),
+  };
+
+  // full-screen quad
+  const quad = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1,-1,0,0,  1,-1,1,0,  -1,1,0,1,
+    -1,1,0,1,   1,-1,1,0,   1,1,1,1
+  ]), gl.STATIC_DRAW);
+
+  function use(p){
+    gl.useProgram(p);
+    const aPos = gl.getAttribLocation(p,'aPos');
+    const aUV  = gl.getAttribLocation(p,'aUV');
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    gl.enableVertexAttribArray(aPos);
+    gl.enableVertexAttribArray(aUV);
+    gl.vertexAttribPointer(aPos,2,gl.FLOAT,false,16,0);
+    gl.vertexAttribPointer(aUV ,2,gl.FLOAT,false,16,8);
+    const uRes=gl.getUniformLocation(p,'uRes'); if(uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
+    const uTime=gl.getUniformLocation(p,'uTime'); if(uTime) gl.uniform1f(uTime, performance.now()/1000);
+  }
+
+  // ping-pong targets
+  let fbA=null, fbB=null, texA=null, texB=null, srcTex=null;
+  function makeRT(w,h){
+    function mkTex(){
+      const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+      return t;
+    }
+    function mkFBO(t){ const f=gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER,f);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0); return f; }
+    texA=mkTex(); texB=mkTex(); fbA=mkFBO(texA); fbB=mkFBO(texB); gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  }
+
+  function setCanvasSize(w,h){
+    canvas.width=w; canvas.height=h; gl.viewport(0,0,w,h);
+    makeRT(w,h);
+    // HUD layers
+    hudCanvas.width=w; hudCanvas.height=h;
+    binCanvas.width=w; binCanvas.height=h;
+    gl.bindTexture(gl.TEXTURE_2D, hudTex);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+    gl.bindTexture(gl.TEXTURE_2D, binTex);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+  }
+
+  // source texture
+  srcTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D,srcTex);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+
+  // HUD TEXT canvas -> tex unit 1
+  const hudCanvas = document.createElement('canvas');
+  const hudCtx = hudCanvas.getContext('2d');
+  const hudTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, hudTex);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+
+  // HUD BIN canvas -> tex unit 2
+  const binCanvas = document.createElement('canvas');
+  const binCtx = binCanvas.getContext('2d');
+  const binTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, binTex);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+
+  // HUD TEXT: popups with orientation
+  const phrases = ['error','failure','exe','system crash',':(','critical error','quit','retry','stop','cancel','1','0','!','?','ACCESS DENIED','FATAL','OVERFLOW','STACK TRACE','REBOOT'];
+  let popups = []; // {text,x,y,created,duration,fs,dir}
+  function spawnPopup(){
+    const w=hudCanvas.width, h=hudCanvas.height; if(!w||!h) return;
+    const txt = phrases[(Math.random()*phrases.length)|0].toUpperCase();
+    const x = Math.random()*(w-220), y = Math.random()*(h-70);
+    const dur = parseInt(ui.hudDur.value,10);
+    const fs = Math.floor(18+Math.random()*36);
+    let dir = ui.hudDir.value;
+    if(dir==='rnd'){ dir = ['up','right','down','left'][(Math.random()*4)|0]; }
+    popups.push({text:txt,x,y,created:performance.now(),duration:dur,fs,dir});
+    if(popups.length>48) popups.shift();
+  }
+  function drawHUDText(){
+    const w=hudCanvas.width, h=hudCanvas.height; if(!w||!h) return;
+    hudCtx.clearRect(0,0,w,h);
+    const now=performance.now();
+    if(Math.random() < parseInt(ui.hudRate.value,10)/300) spawnPopup();
+    popups = popups.filter(p => now - p.created < p.duration);
+    popups.forEach(p=>{
+      const t = (now - p.created)/p.duration; // 0..1
+      const a = (t<0.2)? t/0.2 : (t>0.8? (1.0 - (t-0.8)/0.2) : 1.0);
+      hudCtx.save();
+      hudCtx.translate(p.x, p.y);
+      if(p.dir==='right'){ hudCtx.rotate(Math.PI/2); hudCtx.translate(0,-p.fs); }
+      if(p.dir==='down'){ hudCtx.rotate(Math.PI); hudCtx.translate(-p.fs*10,-p.fs); }
+      if(p.dir==='left'){ hudCtx.rotate(-Math.PI/2); }
+      hudCtx.font = `bold ${p.fs}px ui-monospace, Menlo, Consolas, monospace`;
+      hudCtx.textBaseline='top';
+      hudCtx.fillStyle = `rgba(255,60,60,${0.85*a})`; hudCtx.fillText(p.text, 1, 1);
+      hudCtx.fillStyle = `rgba(255,240,240,${0.95*a})`; hudCtx.fillText(p.text, 0, 0);
+      hudCtx.restore();
+    });
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, hudTex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,hudCanvas);
+    gl.activeTexture(gl.TEXTURE0);
+  }
+  function drawBinary(){
+    const w=binCanvas.width, h=binCanvas.height; if(!w||!h) return;
+    binCtx.clearRect(0,0,w,h);
+    const t = performance.now()/1000;
+    const colW = Math.max(14, Math.floor(w/40));
+    const cols = Math.ceil(w/colW);
+    binCtx.font = `${Math.floor(colW*0.9)}px monospace`;
+    binCtx.textBaseline='top';
+    for(let c=0;c<cols;c++){
+      const x = c*colW + 2;
+      const speed = 30 + (c*7 % 50);
+      const yOff = Math.floor((t*speed + c*23) % (colW*4));
+      for(let r=-4;r<Math.ceil(h/colW)+4;r++){
+        const y = r*colW + yOff;
+        if(y<-colW || y>h) continue;
+        const bit = (Math.random()<0.5) ? '1' : '0';
+        binCtx.fillStyle = `rgba(0,255,120,${0.12 + 0.14*Math.random()})`;
+        binCtx.fillText(bit, x, y);
+      }
+    }
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, binTex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,binCanvas);
+    gl.activeTexture(gl.TEXTURE0);
+  }
+
+  // placeholder init
+  (function(){
+    const ph=document.createElement('canvas'); ph.width=640; ph.height=360;
+    const ctx=ph.getContext('2d'); const g=ctx.createLinearGradient(0,0,640,360);
+    g.addColorStop(0,'#222'); g.addColorStop(1,'#333'); ctx.fillStyle=g; ctx.fillRect(0,0,640,360);
+    setCanvasSize(ph.width,ph.height);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+    gl.bindTexture(gl.TEXTURE_2D,srcTex);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,ph);
+    status('Ready. Upload an image or start webcam.');
+  })();
+
+  function useImage(img){
+    const max = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+    let w=img.width, h=img.height;
+    if(w>max||h>max){ const s=Math.min(max/w,max/h); w=Math.floor(w*s); h=Math.floor(h*s); }
+    setCanvasSize(w,h);
+    gl.bindTexture(gl.TEXTURE_2D,srcTex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);
+    drop.style.display='none';
+  }
+  function loadFile(f){
+    try{
+      const url=URL.createObjectURL(f);
+      const img=new Image(); img.decoding='async';
+      img.onload=()=>{ URL.revokeObjectURL(url); useImage(img); status('Image loaded.'); maybeRandomizeOrient(); };
+      img.onerror=(e)=>{ console.error('Image error',e); status('Could not load that file.'); };
+      img.src=url;
+    }catch(e){ console.error(e); status('Upload error: '+e); }
+  }
+
+  async function startCam(){
+    if(!(location.protocol === 'https:' || location.hostname === 'localhost')){
+      alert('Webcam needs https (GitHub Pages) or http://localhost');
+      return;
+    }
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: {ideal: 1280}, height: {ideal: 720} },
+        audio: false
+      });
+      const v = document.getElementById('vid');
+      v.srcObject = stream;
+
+      await new Promise(res => {
+        if (v.readyState >= 1 && v.videoWidth) return res();
+        v.onloadedmetadata = () => res();
+      });
+      await v.play();
+
+      const w = v.videoWidth || 640;
+      const h = v.videoHeight || 480;
+      setCanvasSize(w, h);
+      drop.style.display='none';
+      status(`Webcam on (${w}×${h}).`);
+      if (typeof maybeRandomizeOrient === 'function') maybeRandomizeOrient();
+    }catch(e){
+      console.error(e);
+      status('Webcam error: '+ e.name + (e.message? (': '+e.message):''));
+      alert('Camera blocked? Click the camera icon in the address bar → Allow, then try again.');
+    }
+  }
+
+  // DRAW HELPERS
+  function drawTo(texIn, fbOut, program, uniforms){
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbOut);
+    use(program);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texIn);
+    const uTex = gl.getUniformLocation(program,'uTex'); if(uTex) gl.uniform1i(uTex,0);
+    if(uniforms) uniforms(program);
+    gl.drawArrays(gl.TRIANGLES,0,6);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  }
+
+  // STEPS MAP
+  const steps = {
+    orient:(r,w)=>drawTo(r,w,P.orient,(p)=>{ gl.uniform1i(gl.getUniformLocation(p,'uMode'), currentOrientMode); }),
+    skew:(r,w)=>drawTo(r,w,P.skew,(p)=>{ gl.uniform1f(gl.getUniformLocation(p,'uSkewX'), parseFloat(ui.skewX.value)/200.0); gl.uniform1f(gl.getUniformLocation(p,'uSkewY'), parseFloat(ui.skewY.value)/200.0); }),
+    crt:(r,w)=>drawTo(r,w,P.crt,(p)=>{ gl.uniform1f(gl.getUniformLocation(p,'uAmt'), parseFloat(ui.crtAmt.value)/100); }),
+    vhs:(r,w)=>drawTo(r,w,P.vhs,(p)=>{ gl.uniform1f(gl.getUniformLocation(p,'uAmt'), 0.6); }),
+    warp:(r,w)=>drawTo(r,w,P.warp,(p)=>{ gl.uniform1f(gl.getUniformLocation(p,'uStr'), parseFloat(ui.str.value)/100); gl.uniform1f(gl.getUniformLocation(p,'uRGB'), parseFloat(ui.rgb.value)/100); gl.uniform1f(gl.getUniformLocation(p,'uSpeed'), parseFloat(ui.speed.value)/50); }),
+    pixel:(r,w)=>drawTo(r,w,P.pixel,(p)=>{ gl.uniform1f(gl.getUniformLocation(p,'uCell'), parseFloat(ui.cell.value)); gl.uniform1f(gl.getUniformLocation(p,'uRGB'), parseFloat(ui.rgb.value)/100); }),
+    sort:(r,w)=>{ if(!(fx.sort.checked||fx.sortV.checked)) return; drawTo(r,w,P.sort,(p)=>{ gl.uniform1f(gl.getUniformLocation(p,'uWin'), parseFloat(ui.sortWin.value)); gl.uniform1f(gl.getUniformLocation(p,'uTh'), parseFloat(ui.sortTh.value)/100); gl.uniform1i(gl.getUniformLocation(p,'uVertical'), fx.sortV.checked?1:0); }); },
+    glitch:(r,w)=>drawTo(r,w,P.glitch,(p)=>{ gl.uniform1f(gl.getUniformLocation(p,'uAmt'), parseFloat(ui.glitchAmt.value)/100); gl.uniform1f(gl.getUniformLocation(p,'uBlk'), parseFloat(ui.glitchBlk.value)/100); gl.uniform1f(gl.getUniformLocation(p,'uPr'), parseFloat(ui.glitchPr.value)/100); }),
+    poster:(r,w)=>drawTo(r,w,P.poster,(p)=>{ gl.uniform1f(gl.getUniformLocation(p,'uSteps'), parseFloat(ui.posterSteps.value)); }),
+    edge:(r,w)=>drawTo(r,w,P.edge),
+    glow:(r,w)=>drawTo(r,w,P.glow,(p)=>{ gl.uniform1f(gl.getUniformLocation(p,'uAmt'), parseFloat(ui.glowAmt.value)/100); }),
+    halftone:(r,w)=>drawTo(r,w,P.halftone,(p)=>{ gl.uniform1f(gl.getUniformLocation(p,'uSize'), parseFloat(ui.halfSize.value)); }),
+    hue:(r,w)=>drawTo(r,w,P.hue,(p)=>{ gl.uniform1f(gl.getUniformLocation(p,'uDeg'), parseFloat(ui.hueAmt.value)); }),
+    tilt:(r,w)=>drawTo(r,w,P.tilt,(p)=>{ gl.uniform1f(gl.getUniformLocation(p,'uAmt'), parseFloat(ui.tiltAmt.value)/100); }),
+    rgb:(r,w)=>drawTo(r,w,P.rgb,(p)=>{ gl.uniform1f(gl.getUniformLocation(p,'uAmt'), parseFloat(ui.rgb.value)/100); }),
+    grain:(r,w)=>drawTo(r,w,P.grain,(p)=>{ gl.uniform1f(gl.getUniformLocation(p,'uAmt'), parseFloat(ui.grain.value)/100); }),
+    vign:(r,w)=>drawTo(r,w,P.vign,(p)=>{ gl.uniform1f(gl.getUniformLocation(p,'uAmt'), parseFloat(ui.vignAmt.value)/100); }),
+    leak:(r,w)=>drawTo(r,w,P.leak,(p)=>{ gl.uniform1f(gl.getUniformLocation(p,'uAmt'), parseFloat(ui.leak.value)/100); }),
+    color:(r,w)=>drawTo(r,w,P.color,(p)=>{ const c1=hexToRGB(ui.col1.value), c2=hexToRGB(ui.col2.value); gl.uniform3f(gl.getUniformLocation(p,'c1'),c1[0],c1[1],c1[2]); gl.uniform3f(gl.getUniformLocation(p,'c2'),c2[0],c2[1],c2[2]); gl.uniform1f(gl.getUniformLocation(p,'a1'),parseFloat(ui.col1Amt.value)/100); gl.uniform1f(gl.getUniformLocation(p,'a2'),parseFloat(ui.col2Amt.value)/100); gl.uniform1i(gl.getUniformLocation(p,'mode'),parseInt(ui.blend.value,10)); }),
+    hudtxt:(r,w)=>drawTo(r,w,P.hudtxt,(p)=>{ gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,hudTex); gl.uniform1i(gl.getUniformLocation(p,'uHUD'),1); gl.activeTexture(gl.TEXTURE0); gl.uniform1f(gl.getUniformLocation(p,'uAmt'),1.0); }),
+    hudbin:(r,w)=>drawTo(r,w,P.hudbin,(p)=>{ gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D,binTex); gl.uniform1i(gl.getUniformLocation(p,'uBIN'),2); gl.activeTexture(gl.TEXTURE0); gl.uniform1f(gl.getUniformLocation(p,'uAmt'), parseFloat(ui.hudBinAmt.value)/100); }),
+    invert:(r,w)=>drawTo(r,w,P.inv),
+  };
+
+  // ORIENTATION STATE
+  let currentOrientMode = 0; // 0,1,2,3
+  function maybeRandomizeOrient(){
+    if(ui.orientSel.value==='4'){ currentOrientMode = [0,1,2,3][(Math.random()*4)|0]; }
+    else currentOrientMode = parseInt(ui.orientSel.value,10);
+  }
+  ui.orientSel.addEventListener('change', maybeRandomizeOrient);
+  maybeRandomizeOrient();
+
+  // RENDER LOOP
+  function render(){
+    requestAnimationFrame(render);
+    // pump video
+    if(vid.srcObject && !vid.paused && !vid.ended){
+      gl.bindTexture(gl.TEXTURE_2D,srcTex);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,vid);
+    }
+    // HUD updates
+    if(fx.hudtxt.checked) drawHUDText();
+    if(fx.hudbin.checked) drawBinary();
+    // ping-pong
+    let read=srcTex, writeFB=fbA, writeTex=texA;
+    const swap=()=>{ const tmp=writeTex; writeTex=(writeTex===texA?texB:texA); writeFB=(writeFB===fbA?fbB:fbA); read=tmp; };
+    for(const name of order){
+      if(name==='sort'){ if(!(fx.sort.checked||fx.sortV.checked)) continue; }
+      else if(!fx[name]?.checked) continue;
+      steps[name](read, writeFB); swap();
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+    use(P.copy);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, read);
+    gl.uniform1i(gl.getUniformLocation(P.copy,'uTex'),0);
+    gl.drawArrays(gl.TRIANGLES,0,6);
+  }
+  render();
+
+  // SAVE (robust)
+  function savePNG(){
+    try{
+      canvas.toBlob((blob)=>{
+        if(!blob){ alert('Could not export image.'); return; }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href=url; a.download='distorted.png'; a.click();
+        setTimeout(()=>URL.revokeObjectURL(url), 1500);
+      }, 'image/png');
+    }catch(e){
+      console.error(e);
+      alert('Download failed, possibly due to cross-origin image. Use Upload/local images or webcam.');
+    }
+  }
+
+  // UTILS
+  function hexToRGB(hex){ const n=parseInt(hex.slice(1),16); return [((n>>16)&255)/255,((n>>8)&255)/255,(n&255)/255]; }
+  function shuffleOrder(){
+    const arr = order.slice();
+    for(let i=arr.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]]; }
+    order = arr; updateOrderPanel();
+  }
+  function randomColor(){ const r=rand(0,255),g=rand(0,255),b=rand(0,255); return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+  function rand(a,b){ return Math.floor(a+Math.random()*(b-a+1)); }
+
+  function randomizeAll(){
+    const bias=(p)=>Math.random()<p;
+    Object.keys(fx).forEach(k=>{ fx[k].checked=(k==='rgb'||k==='grain')?bias(.9):(k==='invert'?bias(.2):bias(.6)); });
+    ui.cell.value=rand(4,96); ui.str.value=rand(10,80); ui.rgb.value=rand(0,70); ui.grain.value=rand(0,40);
+    ui.speed.value=rand(20,80); ui.leak.value=rand(0,60); ui.sortWin.value=rand(8,128); ui.sortTh.value=rand(25,80);
+    ui.skewX.value=rand(-40,40); ui.skewY.value=rand(-40,40);
+    ui.glitchAmt.value=rand(10,80); ui.glitchBlk.value=rand(10,80); ui.glitchPr.value=rand(5,70);
+    ui.col1.value=randomColor(); ui.col2.value=randomColor(); ui.col1Amt.value=rand(10,70); ui.col2Amt.value=rand(5,60);
+    ui.hudDur.value=rand(600,2500); ui.hudRate.value=rand(10,60); ui.hudDir.value='rnd'; ui.hudBinAmt.value=rand(20,80);
+    ui.posterSteps.value=rand(3,10); ui.glowAmt.value=rand(10,60); ui.vignAmt.value=rand(10,60); ui.crtAmt.value=rand(10,60);
+    ui.tiltAmt.value=rand(10,70); ui.halfSize.value=rand(6,24); ui.hueAmt.value=rand(0,360);
+    // randomize source orientation too
+    ui.orientSel.value='4'; maybeRandomizeOrient();
+    shuffleOrder();
+  }
+
+  function applyPreset(name){
+    for(const k in fx) fx[k].checked=false;
+    fx.orient.checked=true; fx.warp.checked=true; fx.rgb.checked=true; fx.grain.checked=true; fx.vign.checked=true; fx.hudtxt.checked=true; fx.hudbin.checked=true;
+    if(name==='vhs'){
+      fx.vhs.checked=true; fx.glitch.checked=true; fx.leak.checked=true; fx.crt.checked=true;
+      ui.rgb.value=30; ui.grain.value=18; ui.speed.value=45; ui.str.value=28; ui.leak.value=18;
+      ui.glitchAmt.value=35; ui.glitchBlk.value=25; ui.glitchPr.value=20; ui.vignAmt.value=25; ui.crtAmt.value=30; ui.hudDur.value=1400; ui.hudRate.value=28; ui.hudBinAmt.value=40; ui.hueAmt.value=0;
+      order=['orient','crt','vhs','warp','glitch','rgb','grain','vign','leak','hudtxt','hudbin']; updateOrderPanel();
+    }
+    if(name==='cyber'){
+      fx.glitch.checked=true; fx.pixel.checked=true; fx.color.checked=true; fx.leak.checked=true; fx.edge.checked=true; fx.glow.checked=true; fx.hue.checked=true; fx.halftone.checked=true;
+      ui.cell.value=18; ui.str.value=55; ui.rgb.value=60; ui.grain.value=10; ui.speed.value=70; ui.leak.value=28;
+      ui.glitchAmt.value=40; ui.glitchBlk.value=35; ui.glitchPr.value=30;
+      ui.col1.value='#ff00aa'; ui.col1Amt.value=55; ui.col2.value='#00e1ff'; ui.col2Amt.value=35; ui.blend.value='0';
+      ui.vignAmt.value=18; ui.glowAmt.value=40; ui.posterSteps.value=6; ui.hudDur.value=1000; ui.hudRate.value=40; ui.hudBinAmt.value=55; ui.hueAmt.value=30; ui.halfSize.value=12;
+      order=['orient','warp','pixel','glitch','edge','glow','hue','halftone','color','rgb','grain','vign','hudbin','hudtxt']; updateOrderPanel();
+    }
+  }
+
+})();
+</script>
+</body>
+</html>
