@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Sarahweb v0.4 — Distortion Lab</title>
+<title>Sarahweb v0.4.1 — Distortion Lab</title>
 <style>
   :root{--panel:#111;--acc:#2a3140;--text:#e5e7eb;--muted:#aab3c5;--outline:#2f3747;}
   *{box-sizing:border-box}
@@ -17,7 +17,7 @@
   #status{position:fixed;left:10px;bottom:10px;background:#111a;padding:8px 10px;border:1px solid #333;border-radius:8px;font:12px/1.3 monospace;max-width:58vw;white-space:pre-wrap}
   #orderPanel{position:fixed;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;background:#0f1320d9;border:1px solid #2b2f3a;border-radius:10px;padding:8px;width:240px;max-height:70vh;overflow:auto}
   #orderPanel h3{margin:0 0 6px 0;font-size:13px;color:var(--muted)}
-  #orderList{font:12px/1.4 monospace;color:#cfe1ff}
+  #orderList{font:12px/1.4 monospace;color:#cfe1ff; white-space:pre}
   details{background:#0d111a;border:1px solid #262b36;border-radius:10px;padding:8px;margin:8px 10px}
   details>summary{cursor:pointer;list-style:none}
   details>summary::-webkit-details-marker{display:none}
@@ -34,7 +34,7 @@
 <body>
 <div id="banner"></div>
 <header>
-  <h1>Sarahweb — v0.4</h1>
+  <h1>Sarahweb — v0.4.1</h1>
   <button id="btnUpload" class="btn">Upload</button>
   <input id="file" type="file" accept="image/*" style="display:none">
   <button id="btnCam" class="btn">Webcam</button>
@@ -328,7 +328,7 @@
   const fsLeak  = sh(gl.FRAGMENT_SHADER, COM+`uniform float uAmt; void main(){ vec3 c=texture2D(uTex,vUV).rgb; float t=uTime*.2; vec2 p1=vec2(0.0)+0.3*vec2(sin(t*1.3),cos(t*1.1)); vec2 p2=vec2(1.0,0.0)+0.25*vec2(cos(t*1.7),sin(t*1.2)); float r1=smoothstep(.9,0.,distance(vUV,p1)), r2=smoothstep(.85,0.,distance(vUV,p2)); vec3 leak=vec3(1.,.6,.2)*r1 + vec3(.8,.2,.9)*r2; c=mix(c,c+leak,uAmt); gl_FragColor=vec4(c,1.);} `);
   const fsColor = sh(gl.FRAGMENT_SHADER, COM+`uniform vec3 c1,c2; uniform float a1,a2; uniform int mode; vec3 screenBlend(vec3 b, vec3 s){return 1.-(1.-b)*(1.-s);} vec3 overlayBlend(vec3 b, vec3 s){return mix(2.*b*s,1.-2.*(1.-b)*(1.-s), step(0.5,b));} void main(){ vec3 col=texture2D(uTex,vUV).rgb; vec3 t1=mix(col,screenBlend(col,c1),a1); vec3 t2=(mode==0)?screenBlend(t1,c2):(mode==1)?(t1*c2):overlayBlend(t1,c2); col=mix(t1,t2,a2); gl_FragColor=vec4(col,1.);} `);
   const fsHUDtxt= sh(gl.FRAGMENT_SHADER, COM+`uniform sampler2D uHUD; uniform float uAmt; void main(){ vec4 base=texture2D(uTex,vUV); vec4 hud=texture2D(uHUD,vUV); gl_FragColor=vec4(mix(base.rgb, hud.rgb, hud.a*uAmt),1.);} `);
-  const fsHUDbin= sh(gl.FRAGMENT_SHADER, COM+`uniform sampler2D uBIN; uniform float uAmt; void main(){ vec4 base=texture2D(uTex,vUV); vec4 bin=texture2D(uBIN,vUV); gl_FragColor=vec4(mix(base.rgb, base.rgb*0.6 + bin.rgb*1.4, uAmt*bin.a),1.);} `);
+  const fsHUDbin= sh(gl.FRAGMENT_SHADER, COM+`uniform sampler2D uBIN; uniform float uAmt; void main(){ vec4 base=texture2D(uTex,vUV); vec4 bin=texture2D(uTex,vUV); bin = texture2D(uBIN,vUV); gl_FragColor=vec4(mix(base.rgb, base.rgb*0.6 + bin.rgb*1.4, uAmt*bin.a),1.);} `);
   const fsInv   = sh(gl.FRAGMENT_SHADER, COM+`void main(){ vec4 c=texture2D(uTex,vUV); gl_FragColor=vec4(1.-c.rgb,c.a);} `);
 
   const P = {
@@ -460,9 +460,8 @@
       const a = (t<0.2)? t/0.2 : (t>0.8? (1.0 - (t-0.8)/0.2) : 1.0);
       hudCtx.save();
       hudCtx.translate(p.x, p.y);
-      // orientation per popup
       if(p.dir==='right'){ hudCtx.rotate(Math.PI/2); hudCtx.translate(0,-p.fs); }
-      if(p.dir==='down'){ hudCtx.rotate(Math.PI); hudCtx.translate(-p.fs*10,-p.fs); } // rough width shift
+      if(p.dir==='down'){ hudCtx.rotate(Math.PI); hudCtx.translate(-p.fs*10,-p.fs); }
       if(p.dir==='left'){ hudCtx.rotate(-Math.PI/2); }
       hudCtx.font = `bold ${p.fs}px ui-monospace, Menlo, Consolas, monospace`;
       hudCtx.textBaseline='top';
@@ -509,7 +508,7 @@
     setCanvasSize(ph.width,ph.height);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
     gl.bindTexture(gl.TEXTURE_2D,srcTex);
-    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNEDBYTE,ph);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,ph);
     status('Ready. Upload an image or start webcam.');
   })();
 
@@ -520,7 +519,7 @@
     setCanvasSize(w,h);
     gl.bindTexture(gl.TEXTURE_2D,srcTex);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
-    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNEDBYTE,img);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);
     drop.style.display='none';
   }
   function loadFile(f){
@@ -532,14 +531,37 @@
       img.src=url;
     }catch(e){ console.error(e); status('Upload error: '+e); }
   }
+
   async function startCam(){
-    if(!isSecure){ alert('Webcam requires https or http://localhost'); return; }
+    if(!(location.protocol === 'https:' || location.hostname === 'localhost')){
+      alert('Webcam needs https (GitHub Pages) or http://localhost');
+      return;
+    }
     try{
-      const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
-      vid.srcObject=stream; await vid.play();
-      setCanvasSize(vid.videoWidth||640, vid.videoHeight||480);
-      drop.style.display='none'; status('Webcam on.'); maybeRandomizeOrient();
-    }catch(e){ console.error(e); status('Webcam error: '+e); alert('Camera blocked. Use the address-bar camera icon → Allow.'); }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: {ideal: 1280}, height: {ideal: 720} },
+        audio: false
+      });
+      const v = document.getElementById('vid');
+      v.srcObject = stream;
+
+      await new Promise(res => {
+        if (v.readyState >= 1 && v.videoWidth) return res();
+        v.onloadedmetadata = () => res();
+      });
+      await v.play();
+
+      const w = v.videoWidth || 640;
+      const h = v.videoHeight || 480;
+      setCanvasSize(w, h);
+      drop.style.display='none';
+      status(`Webcam on (${w}×${h}).`);
+      if (typeof maybeRandomizeOrient === 'function') maybeRandomizeOrient();
+    }catch(e){
+      console.error(e);
+      status('Webcam error: '+ e.name + (e.message? (': '+e.message):''));
+      alert('Camera blocked? Click the camera icon in the address bar → Allow, then try again.');
+    }
   }
 
   // DRAW HELPERS
@@ -595,7 +617,7 @@
     if(vid.srcObject && !vid.paused && !vid.ended){
       gl.bindTexture(gl.TEXTURE_2D,srcTex);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
-      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNEDBYTE,vid);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,vid);
     }
     // HUD updates
     if(fx.hudtxt.checked) drawHUDText();
