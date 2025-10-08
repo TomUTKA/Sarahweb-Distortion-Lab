@@ -1,7 +1,12 @@
-<!DOCTYPE html><html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Sarahweb — Distortion Lab (v6)</title>
-<link rel="stylesheet" href="./lab.css"></head><body>
+<link rel="stylesheet" href="./lab.css">
+</head>
+<body>
 <div id="banner"></div>
 <header class="top">
   <a class="navlink" href="./index.html">⟵ Home</a>
@@ -14,8 +19,32 @@
   <button id="btnShuffle" class="btn sfx">🔀 Shuffle Order</button>
   <audio id="clickSfx"></audio>
 </header>
+
+<details open>
+  <summary>🎛️ Main Controls</summary>
+  <div class="row">
+    <label>Cell <input id="cell" type="range" min="2" max="128" value="24"></label>
+    <label>Distort <input id="strength" type="range" min="0" max="100" value="40"></label>
+    <label>RGB <input id="rgb" type="range" min="0" max="100" value="35"></label>
+    <label>Speed <input id="speed" type="range" min="0" max="100" value="50"></label>
+  </div>
+</details>
+
 <div id="drop">Drop an image here or click Upload. Webcam needs https (GitHub Pages) or http://localhost.</div>
-<canvas id="gl"></canvas><video id="vid" autoplay playsinline muted style="display:none"></video>
-<div id="orderPanel"><h3>Pipeline Order</h3><div id="orderList"></div><button id="btnShuffle2" class="btn sfx">🔀 Shuffle</button></div>
+<canvas id="gl"></canvas>
+<video id="vid" autoplay playsinline muted style="display:none"></video>
+
+<details>
+  <summary>🧰 Pipeline</summary>
+  <div id="orderPanel">
+    <h3>Pipeline Order</h3>
+    <div id="orderList"></div>
+    <button id="btnShuffle2" class="btn sfx">🔀 Shuffle</button>
+  </div>
+</details>
+
 <div id="status"></div>
-<script src="./lab.js"></script></body></html>
+
+<script src="./lab.js"></script>
+</body>
+</html>
