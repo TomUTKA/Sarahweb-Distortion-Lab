@@ -1,122 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Sarahweb</title>
-<meta name="description" content="Sarahweb — a sleek, glitchy portal to the Distortion Lab." />
 <style>
-  :root{
-    --bg: #0b0c10;
-    --panel:#0f1422;
-    --ink:#e5e7eb;
-    --muted:#9aa3b2;
-    --accent:#7c3aed;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0;background:radial-gradient(1200px 700px at 70% -10%, #141827 0%, #0b0c10 60%) no-repeat, var(--bg);
-    color:var(--ink); font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Arial;
-    overflow:hidden;
-  }
-  .grain::before{
-    content:""; position:fixed; inset:0; pointer-events:none;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23f)' opacity='.06'/%3E%3C/svg%3E");
-    mix-blend-mode: soft-light;
-  }
-  header{
-    position:fixed; top:0; left:0; right:0; height:56px; display:flex; align-items:center; justify-content:space-between;
-    padding:0 16px; background:linear-gradient(#0f1422cc,#0f142200); border-bottom:1px solid #1f2536;
-    backdrop-filter: blur(6px);
-  }
-  .brand{font-weight:700; letter-spacing:.5px; color:#c9d1ff}
-  .container{
-    height:100%; display:grid; place-items:center; padding-top:40px;
-  }
-  .card{
-    background:linear-gradient(180deg, #0f1422 0%, #0b0f1a 100%);
-    border:1px solid #1f2536; border-radius:16px; padding:36px 28px; width:min(720px, 92vw);
-    box-shadow: 0 20px 60px rgba(0,0,0,.45), inset 0 1px 0 #1b2132;
-    position:relative; overflow:hidden;
-  }
-  .scan{
-    position:absolute; left:0; right:0; height:180px; top:-180px;
-    background: linear-gradient(180deg, rgba(124,58,237,0) 0%, rgba(124,58,237,.15) 50%, rgba(124,58,237,0) 100%);
-    filter: blur(8px); opacity:.3; animation: scan 6s linear infinite;
-  }
-  @keyframes scan { 0%{transform:translateY(0)} 100%{transform:translateY(520px)} }
-  .glitch-wrap{ position:relative; display:inline-block; }
-  .glitch{
-    font-size: clamp(40px, 8vw, 92px);
-    line-height: .9;
-    font-weight:900; letter-spacing:1.5px;
-    text-transform:uppercase;
-    text-shadow:
-      -1px 0 #00e1ff88,
-       1px 0 #ff00aa88,
-       0 0 24px rgba(124,58,237,.35);
-  }
-  .glitch[data-text]::before,
-  .glitch[data-text]::after{
-    content:attr(data-text);
-    position:absolute; left:0; top:0; width:100%; overflow:hidden;
-  }
-  .glitch[data-text]::before{
-    animation: shift1 2.6s infinite steps(2);
-    color:#00e1ff; clip-path: inset(0 0 58% 0);
-    transform: translate(2px,0);
-    mix-blend-mode: screen;
-  }
-  .glitch[data-text]::after{
-    animation: shift2 2.4s infinite steps(2);
-    color:#ff00aa; clip-path: inset(42% 0 0 0);
-    transform: translate(-2px,0);
-    mix-blend-mode: screen;
-  }
-  @keyframes shift1 { 0%{transform:translate(2px,0)} 50%{transform:translate(-1px,0)} 100%{transform:translate(2px,0)} }
-  @keyframes shift2 { 0%{transform:translate(-2px,0)} 50%{transform:translate(1px,0)} 100%{transform:translate(-2px,0)} }
-  p{
-    color:var(--muted); margin:16px 0 24px; font-size:clamp(14px, 2vw, 16px);
-  }
-  .cta{
-    display:inline-flex; align-items:center; gap:10px;
-    background:linear-gradient(90deg, #7c3aed 0%, #06b6d4 100%);
-    color:#0b0c10; border:none; border-radius:14px; padding:16px 26px;
-    font-weight:800; letter-spacing:.6px; text-transform:uppercase; font-size:16px;
-    cursor:pointer; box-shadow: 0 8px 30px rgba(6,182,212,.35);
-    text-decoration:none;
-  }
-  .cta:hover{ filter:brightness(1.05); transform: translateY(-1px); }
-  .sub{ font-size:12px; color:#7a84a1; margin-top:10px }
-  footer{ position:fixed; bottom:10px; left:0; right:0; text-align:center; font-size:12px; color:#6b7280 }
-  .navlink{ color:#93c5fd; text-decoration:none; }
-  .navlink:hover{ text-decoration:underline; }
-</style>
-</head>
-<body class="grain">
-<header>
-  <div class="brand">Sarahweb</div>
-  <nav><a class="navlink" href="./lab.html">Open Distortion Lab →</a></nav>
-</header>
-
-<main class="container">
-  <section class="card">
-    <div class="scan"></div>
-    <div class="glitch-wrap">
-      <div class="glitch" data-text="Sarahweb">Sarahweb</div>
-    </div>
-    <p>Real‑time, GPU‑powered glitches, warps, pixel sorting, and retro vibes — all in your browser. Upload an image or use your webcam and stack effects any way you like.</p>
-    <a class="cta" href="./lab.html" aria-label="Open Sarahweb Distortion Lab">
-      Open the Distortion Lab
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 12h12m0 0-4-4m4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </a>
-    <div class="sub">Works best on HTTPS (GitHub Pages) or localhost for webcam.</div>
-  </section>
-</main>
-
-<footer>
-  <a class="navlink" href="./lab.html">Skip to Lab</a>
-</footer>
-</body>
-</html>
+:root{--bg:#0a0b10;--ink:#e5e7eb;--muted:#9aa3b2;--accent:#7c3aed;--accent2:#06b6d4}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
+header{position:fixed;inset:0 0 auto 0;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:linear-gradient(#0c1120cc,#0c112000);border-bottom:1px solid #1c2130;backdrop-filter:blur(6px);z-index:10}
+.brand{font-weight:800;color:#c9d1ff;letter-spacing:.5px}
+.nav a{color:#93c5fd;text-decoration:none}.nav a:hover{text-decoration:underline}
+.wrap{height:100%;display:grid;place-items:center;padding-top:30px}
+.card{position:relative;width:min(820px,92vw);border-radius:18px;border:1px solid #1f2536;background:radial-gradient(1000px 420px at 100% -20%,#182039 0,#0c1222 60%,#0a0b10 100%);padding:34px 26px;box-shadow:0 20px 60px rgba(0,0,0,.45), inset 0 1px 0 #1a2030;overflow:hidden}
+.title{font-size:clamp(42px,8vw,96px);font-weight:900;letter-spacing:1.2px;line-height:.95;text-transform:uppercase;text-shadow:-1px 0 #00e1ff88,1px 0 #ff00aa88,0 0 24px rgba(124,58,237,.35);margin:0 0 6px 0}
+p{color:var(--muted);margin:12px 0 20px;font-size:clamp(14px,2vw,16px)}
+.cta{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(90deg,var(--accent) 0%,var(--accent2) 100%);color:#0b0c10;border:none;border-radius:14px;padding:16px 26px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;font-size:16px;cursor:pointer;box-shadow:0 8px 30px rgba(6,182,212,.35);text-decoration:none}
+.cta:hover{filter:brightness(1.05);transform:translateY(-1px)}
+#ascii{position:absolute;inset:0;border-radius:18px;pointer-events:none;opacity:.22;font:12px/12px ui-monospace,Menlo,Consolas,monospace;color:#9fb5ff;mix-blend-mode:screen;white-space:pre;overflow:hidden;padding:10px}
+</style></head><body>
+<header><div class="brand">Sarahweb</div><div class="nav"><a href="./lab.html">Open Distortion Lab →</a></div></header>
+<main class="wrap"><section class="card"><pre id="ascii"></pre><h1 class="title">Sarahweb</h1>
+<p>GPU‑powered glitches, warps, ASCII, trails — right in your browser.</p><a class="cta" href="./lab.html">Open the Distortion Lab →</a></section></main>
+<script>(function(){const el=document.getElementById('ascii'),C=" .:-=+*#%@";function d(){const w=Math.floor(el.clientWidth/8),h=Math.floor(el.clientHeight/12);let o="",t=performance.now()/900;for(let y=0;y<h;y++){for(let x=0;x<w;x++){const v=0.5+0.5*Math.sin(x*0.12+y*0.18+t*2.0)*Math.cos(x*0.08-y*0.12+t*1.3);const i=Math.min(C.length-1,Math.max(0,Math.floor(v*(C.length))));o+=C[i];}o+="
+";}el.textContent=o;requestAnimationFrame(d);}d();})();</script>
+</body></html>
