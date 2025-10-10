@@ -1,21 +1,15 @@
 (() => {
   'use strict';
 
-  // 🎛️ UI helpers
   const $ = (id) => document.getElementById(id);
   const status = (m) => { $('status').textContent = m; };
   const showOrder = (arr) => { $('orderList').textContent = arr.join('\n'); };
 
   const canvas = $('gl');
-  const gl = canvas.getContext('webgl');
+  const ctx = canvas.getContext('2d'); // switched to 2D for live rendering
   const vid = $('vid');
 
-  if (!gl) {
-    status('WebGL not supported on this device.');
-    return;
-  }
-
-  // 🔊 Click sounds
+  // 🔊 Click SFX
   const clickSfx = $('clickSfx');
   clickSfx.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACAAABAAEA/////wD///8AAP//AAD//wAA//8AAP///w==";
   document.querySelectorAll('.sfx').forEach(b => {
@@ -24,7 +18,7 @@
     });
   });
 
-  // 🎛️ UI controls
+  // 🎛️ UI
   const ui = {
     cell: $('cell'),
     str: $('strength'),
@@ -51,96 +45,8 @@
   $('btnShuffle').onclick = shuffleOrder;
   $('btnShuffle2').onclick = shuffleOrder;
 
-  // 🎥 Start webcam
-  async function startCam() {
-    if (!(location.protocol === 'https:' || location.hostname === 'localhost')) {
-      alert('Webcam requires HTTPS or localhost');
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false
-      });
-      vid.srcObject = stream;
-      await vid.play();
-      const w = vid.videoWidth || 640;
-      const h = vid.videoHeight || 480;
-      setCanvasSize(w, h);
-      status(`Camera started (${w}x${h})`);
-    } catch (e) {
-      status(`Camera error: ${e.message}`);
-      alert('Could not access camera. Check permissions.');
-    }
-  }
-
-  // 📏 Resize + WebGL setup
-  function setCanvasSize(w, h) {
-    canvas.width = w;
-    canvas.height = h;
-    gl.viewport(0, 0, w, h);
-  }
-
-  // 🎨 Shaders
-  const VS = `
-    attribute vec2 aPos;
-    attribute vec2 aUV;
-    varying vec2 vUV;
-    void main() {
-      vUV = aUV;
-      gl_Position = vec4(aPos, 0.0, 1.0);
-    }
-  `;
-
-  const COM = `
-    precision mediump float;
-    varying vec2 vUV;
-    uniform sampler2D uTex;
-    uniform vec2 uRes;
-    uniform float uTime;
-  `;
-
-  const sh = (type, src) => {
-    const s = gl.createShader(type);
-    gl.shaderSource(s, src);
-    gl.compileShader(s);
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-      console.error(gl.getShaderInfoLog(s));
-    }
-    return s;
-  };
-
-  const prog = (vs, fs) => {
-    const p = gl.createProgram();
-    gl.attachShader(p, vs);
-    gl.attachShader(p, fs);
-    gl.linkProgram(p);
-    return p;
-  };
-
-  const makeShader = (src) => sh(gl.FRAGMENT_SHADER, COM + src);
-  const P = {
-    copy: prog(sh(gl.VERTEX_SHADER, VS), makeShader(`void main(){gl_FragColor=texture2D(uTex,vUV);}`)),
-    invert: prog(sh(gl.VERTEX_SHADER, VS), makeShader(`void main(){vec4 c=texture2D(uTex,vUV);gl_FragColor=vec4(1.0-c.rgb,1.0);}`)),
-  };
-
-  const quad = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, quad);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-    -1, -1, 0, 0,
-    1, -1, 1, 0,
-    -1, 1, 0, 1,
-    -1, 1, 0, 1,
-    1, -1, 1, 0,
-    1, 1, 1, 1
-  ]), gl.STATIC_DRAW);
-
-  // 🎞️ Effects placeholders (for expansion)
+  let running = false;
   let order = ['invert'];
-  const updateOrderPanel = () => showOrder(order);
-
-  updateOrderPanel();
 
   function shuffleOrder() {
     const arr = order.slice();
@@ -149,7 +55,7 @@
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     order = arr;
-    updateOrderPanel();
+    showOrder(order);
   }
 
   function randomizeAll() {
@@ -165,29 +71,49 @@
     shuffleOrder();
   }
 
-  // 🖼️ Text popups
+  // 🎥 Start Camera
+  async function startCam() {
+    if (!(location.protocol === 'https:' || location.hostname === 'localhost')) {
+      alert('Webcam requires HTTPS or localhost.');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false
+      });
+      vid.srcObject = stream;
+      await vid.play();
+
+      const w = vid.videoWidth || 640;
+      const h = vid.videoHeight || 480;
+      canvas.width = w;
+      canvas.height = h;
+      running = true;
+      status(`Camera started (${w}x${h})`);
+      render();
+    } catch (e) {
+      status(`Camera error: ${e.message}`);
+      alert('Could not access camera. Check permissions.');
+    }
+  }
+
+  // 💬 Text Popups
   const textCanvas = document.createElement('canvas');
   const textCtx = textCanvas.getContext('2d');
-  const textTex = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, textTex);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-
   const words = ['ERROR', 'FAILURE', 'SYSTEM CRASH', ':(', 'CRITICAL ERROR', 'QUIT', 'STOP', 'CANCEL'];
   let activeMsgs = [];
 
   function spawnMsg() {
     const txt = words[(Math.random() * words.length) | 0];
-    const x = Math.random() * textCanvas.width * 0.8;
-    const y = Math.random() * textCanvas.height * 0.8;
+    const x = Math.random() * canvas.width * 0.8;
+    const y = Math.random() * canvas.height * 0.8;
     const life = parseInt(ui.text_ms.value || 1200, 10);
     const rotation = [0, 90, 180, 270][(Math.random() * 4) | 0];
     activeMsgs.push({ txt, x, y, t: performance.now(), life, rotation });
   }
 
-  setInterval(() => { if (ui.fx_text.checked) spawnMsg(); }, 1000);
+  setInterval(() => { if (ui.fx_text.checked && running) spawnMsg(); }, 1200);
 
   function drawTextOverlay() {
     const now = performance.now();
@@ -212,17 +138,30 @@
       textCtx.fillText(m.txt, 0, 0);
       textCtx.restore();
     }
+
+    ctx.drawImage(textCanvas, 0, 0);
   }
 
-  // 🧠 Main render loop (simple placeholder)
+  // 🎨 Render Loop
   function render() {
+    if (!running) return;
     requestAnimationFrame(render);
+
     if (vid.readyState >= 2) {
-      gl.clearColor(0, 0, 0, 1);
-      gl.clear(gl.COLOR_BUFFER_BIT);
+      ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
     }
+
+    // Future: apply effects based on slider values (placeholder for distortion etc.)
+    if (ui.fx_invert.checked) {
+      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < img.data.length; i += 4) {
+        img.data[i] = 255 - img.data[i];
+        img.data[i + 1] = 255 - img.data[i + 1];
+        img.data[i + 2] = 255 - img.data[i + 2];
+      }
+      ctx.putImageData(img, 0, 0);
+    }
+
     drawTextOverlay();
   }
-
-  render();
 })();
