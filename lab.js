@@ -5,7 +5,7 @@
   const status = (m) => { $('status').textContent = m; };
 
   const canvas = $('gl');
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   const vid = $('vid');
 
   // 🔊 Click sound
