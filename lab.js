@@ -6,19 +6,23 @@
   const showOrder = (arr) => { $('orderList').textContent = arr.join('\n'); };
 
   const canvas = $('gl');
-  const ctx = canvas.getContext('2d'); // switched to 2D for live rendering
+  const ctx = canvas.getContext('2d');
   const vid = $('vid');
 
-  // 🔊 Click SFX
+  // 🔊 Click sound
   const clickSfx = $('clickSfx');
-  clickSfx.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACAAABAAEA/////wD///8AAP//AAD//wAA//8AAP///w==";
-  document.querySelectorAll('.sfx').forEach(b => {
+  clickSfx.src =
+    "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACAAABAAEA/////wD///8AAP//AAD//wAA//8AAP///w==";
+  document.querySelectorAll('.sfx').forEach((b) =>
     b.addEventListener('click', () => {
-      try { clickSfx.currentTime = 0; clickSfx.play(); } catch {}
-    });
-  });
+      try {
+        clickSfx.currentTime = 0;
+        clickSfx.play();
+      } catch {}
+    })
+  );
 
-  // 🎛️ UI
+  // 🎛️ Controls
   const ui = {
     cell: $('cell'),
     str: $('strength'),
@@ -71,37 +75,53 @@
     shuffleOrder();
   }
 
-  // 🎥 Start Camera
+  // 🎥 Start Camera — fixed version
   async function startCam() {
     if (!(location.protocol === 'https:' || location.hostname === 'localhost')) {
       alert('Webcam requires HTTPS or localhost.');
       return;
     }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: {
+          facingMode: 'user',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
         audio: false
       });
-      vid.srcObject = stream;
-      await vid.play();
 
-      const w = vid.videoWidth || 640;
-      const h = vid.videoHeight || 480;
-      canvas.width = w;
-      canvas.height = h;
-      running = true;
-      status(`Camera started (${w}x${h})`);
-      render();
+      vid.srcObject = stream;
+      status('Camera access granted. Waiting for feed...');
+
+      vid.onloadedmetadata = () => {
+        vid.play();
+        canvas.width = vid.videoWidth || 640;
+        canvas.height = vid.videoHeight || 480;
+        running = true;
+        status(`Camera started (${canvas.width}x${canvas.height})`);
+        render();
+      };
     } catch (e) {
       status(`Camera error: ${e.message}`);
       alert('Could not access camera. Check permissions.');
     }
   }
 
-  // 💬 Text Popups
+  // 💬 Text pop-ups
   const textCanvas = document.createElement('canvas');
   const textCtx = textCanvas.getContext('2d');
-  const words = ['ERROR', 'FAILURE', 'SYSTEM CRASH', ':(', 'CRITICAL ERROR', 'QUIT', 'STOP', 'CANCEL'];
+  const words = [
+    'ERROR',
+    'FAILURE',
+    'SYSTEM CRASH',
+    ':(',
+    'CRITICAL ERROR',
+    'QUIT',
+    'STOP',
+    'CANCEL'
+  ];
   let activeMsgs = [];
 
   function spawnMsg() {
@@ -113,7 +133,9 @@
     activeMsgs.push({ txt, x, y, t: performance.now(), life, rotation });
   }
 
-  setInterval(() => { if (ui.fx_text.checked && running) spawnMsg(); }, 1200);
+  setInterval(() => {
+    if (ui.fx_text.checked && running) spawnMsg();
+  }, 1200);
 
   function drawTextOverlay() {
     const now = performance.now();
@@ -142,18 +164,22 @@
     ctx.drawImage(textCanvas, 0, 0);
   }
 
-  // 🎨 Render Loop
+  // 🎨 Render loop — draws mirrored live feed
   function render() {
     if (!running) return;
     requestAnimationFrame(render);
 
-    if (vid.readyState >= 2) {
-      ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
-    }
+    const w = canvas.width;
+    const h = canvas.height;
 
-    // Future: apply effects based on slider values (placeholder for distortion etc.)
+    ctx.save();
+    ctx.scale(-1, 1);
+    ctx.drawImage(vid, -w, 0, w, h);
+    ctx.restore();
+
+    // Example simple effect: invert
     if (ui.fx_invert.checked) {
-      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const img = ctx.getImageData(0, 0, w, h);
       for (let i = 0; i < img.data.length; i += 4) {
         img.data[i] = 255 - img.data[i];
         img.data[i + 1] = 255 - img.data[i + 1];
