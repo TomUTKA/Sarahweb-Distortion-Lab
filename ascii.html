@@ -4,17 +4,20 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sarahweb — ASCII Generator v7</title>
+  <!-- Shared theme -->
   <link rel="stylesheet" href="./lab.css" />
 </head>
 <body>
+  <!-- Top bar matches Distortion Lab -->
   <header class="top">
     <a class="navlink" href="./index.html">⟵ Home</a>
     <h1>Sarahweb — ASCII Generator v7</h1>
-    <button id="btnCam" class="btn sfx">Start Camera</button>
+    <button id="btnCam" class="btn sfx">🎥 Start Camera</button>
     <button id="btnToggle" class="btn sfx">Toggle ASCII</button>
     <audio id="clickSfx"></audio>
   </header>
 
+  <!-- Settings block (same details/row layout) -->
   <details open>
     <summary>⚙️ Settings</summary>
     <div class="row">
@@ -23,111 +26,30 @@
           <option value="classic">Classic ASCII</option>
           <option value="numbers">Numbers</option>
           <option value="latin">Latin (A–Z, a–z)</option>
-          <option value="binary">Binary (0,1)</option>
+          <option value="binary">Binary (0/1)</option>
           <option value="cyrillic">Cyrillic</option>
           <option value="kana">Japanese Kana</option>
           <option value="braille">Braille</option>
         </select>
       </label>
-      <label>Density <input id="density" type="range" min="2" max="12" value="6"></label>
-      <label>Color <input id="color" type="color" value="#00ff88"></label>
+
+      <label>Density
+        <input id="density" type="number" min="2" max="16" value="8" />
+      </label>
+
+      <label>Color
+        <input id="color" type="color" value="#00e1ff" />
+      </label>
     </div>
   </details>
 
+  <!-- Output & camera (styled by lab.css) -->
   <canvas id="asciiCanvas"></canvas>
   <video id="vid" autoplay playsinline muted style="display:none"></video>
 
-  <div id="status"></div>
+  <div id="status">Waiting for camera…</div>
 
-  <script>
-  (() => {
-    const canvas = document.getElementById('asciiCanvas');
-    const ctx = canvas.getContext('2d');
-    const vid = document.getElementById('vid');
-    const charsetEl = document.getElementById('charset');
-    const densityEl = document.getElementById('density');
-    const colorEl = document.getElementById('color');
-    const btnCam = document.getElementById('btnCam');
-    const btnToggle = document.getElementById('btnToggle');
-    const status = (m) => { document.getElementById('status').textContent = m; };
-
-    const clickSfx = document.getElementById('clickSfx');
-    clickSfx.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACAAABAAEA/////wD///8AAP//AAD//wAA//8AAP///w==";
-    document.querySelectorAll('.sfx').forEach(b =>
-      b.addEventListener('click', () => {
-        try { clickSfx.currentTime = 0; clickSfx.play(); } catch {}
-      })
-    );
-
-    const sets = {
-      classic: " .:-=+*#%@",
-      numbers: "0123456789",
-      latin: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
-      binary: "01",
-      cyrillic: "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ",
-      kana: "アイウエオカキクケコサシスセソタチツテトナニヌネノ",
-      braille: "⠁⠂⠄⠈⠐⠠⠡⠣⠥⠧⠩⠫⠭⠯⠷⠿"
-    };
-
-    let running = false;
-    let asciiMode = true;
-
-    async function startCam() {
-      if (!(location.protocol === 'https:' || location.hostname === 'localhost')) {
-        alert('Webcam requires HTTPS or localhost.');
-        return;
-      }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false
-        });
-        vid.srcObject = stream;
-        await vid.play();
-        canvas.width = vid.videoWidth || 640;
-        canvas.height = vid.videoHeight || 480;
-        running = true;
-        status("Camera started.");
-        render();
-      } catch (e) {
-        console.error(e);
-        status("Camera error: " + e.message);
-      }
-    }
-
-    btnCam.onclick = startCam;
-    btnToggle.onclick = () => asciiMode = !asciiMode;
-
-    function render() {
-      if (!running) return;
-      requestAnimationFrame(render);
-      const w = canvas.width, h = canvas.height;
-      const d = parseInt(densityEl.value, 10);
-      const charset = sets[charsetEl.value] || sets.classic;
-
-      ctx.drawImage(vid, 0, 0, w, h);
-      const frame = ctx.getImageData(0, 0, w, h);
-      ctx.clearRect(0, 0, w, h);
-
-      if (asciiMode) {
-        ctx.fillStyle = colorEl.value;
-        ctx.font = `${d * 1.5}px monospace`;
-        ctx.textBaseline = 'top';
-        for (let y = 0; y < h; y += d * 2) {
-          for (let x = 0; x < w; x += d) {
-            const i = (y * w + x) * 4;
-            const r = frame.data[i], g = frame.data[i + 1], b = frame.data[i + 2];
-            const brightness = (r + g + b) / 3;
-            const index = Math.floor((brightness / 255) * (charset.length - 1));
-            const ch = charset[index] || " ";
-            ctx.fillText(ch, x, y);
-          }
-        }
-      } else {
-        ctx.drawImage(vid, 0, 0, w, h);
-      }
-    }
-  })();
-  </script>
+  <!-- ASCII logic (separate file) -->
+  <script src="./ascii.js"></script>
 </body>
 </html>
