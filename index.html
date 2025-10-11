@@ -2,140 +2,226 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sarahweb v7 — Home</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sarahweb — Home</title>
+  <link rel="stylesheet" href="./lab.css" />
   <style>
-    :root {
-      --bg: #0b0c10;
-      --ink: #e5e7eb;
-      --accent1: #06b6d4;
-      --accent2: #7c3aed;
-    }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, Segoe UI, Roboto, sans-serif; overflow: hidden; }
-
-    header {
+    /* ASCII rain background */
+    .bg-wrap {
       position: fixed;
-      top: 0; left: 0; right: 0;
-      height: 56px;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 16px;
-      background: linear-gradient(#0c1120cc, #0c112000);
-      border-bottom: 1px solid #1c2130;
-      backdrop-filter: blur(6px);
-      z-index: 10;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
     }
-
-    .brand {
-      font-weight: 900;
-      color: #c9d1ff;
-      letter-spacing: 0.5px;
-      text-shadow: 0 0 6px #7c3aed88;
-    }
-
-    .wrap {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100%;
-      text-align: center;
-      position: relative;
-    }
-
-    h1 {
-      font-size: clamp(42px, 8vw, 100px);
-      font-weight: 900;
-      margin: 0;
-      letter-spacing: 2px;
-      background: linear-gradient(90deg, var(--accent2), var(--accent1));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 20px #06b6d455;
-    }
-
-    p {
-      color: #9aa3b2;
-      font-size: 16px;
-      margin-top: 12px;
-      margin-bottom: 40px;
-    }
-
-    .buttons {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .btn {
-      background: linear-gradient(90deg, var(--accent2), var(--accent1));
-      color: #0b0c10;
-      border: none;
-      border-radius: 14px;
-      padding: 16px 28px;
-      font-weight: 800;
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-      font-size: 16px;
-      cursor: pointer;
-      box-shadow: 0 8px 30px rgba(6,182,212,0.3);
-      transition: transform 0.15s ease, filter 0.2s ease;
-      text-decoration: none;
-    }
-
-    .btn:hover {
-      filter: brightness(1.1);
-      transform: translateY(-2px);
-    }
-
-    #ascii {
+    #asciiBg {
       position: absolute;
       inset: 0;
-      color: #5f6df0;
-      opacity: 0.1;
-      font: 12px/12px ui-monospace, monospace;
-      white-space: pre;
-      pointer-events: none;
-      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      display: block;
+      filter: contrast(120%) saturate(110%) brightness(105%);
+      opacity: 0.5;
+      mix-blend-mode: screen;
+    }
+
+    /* Foreground */
+    .hero {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 120px 16px 40px;
+    }
+
+    /* --- BIG SARAHWEB LOGO --- */
+    .hero .logo {
+      font-size: clamp(48px, 9vw, 120px);
+      font-weight: 900;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--cyan);
+      text-shadow:
+        0 0 12px rgba(0, 225, 255, 0.7),
+        0 0 28px rgba(255, 42, 109, 0.25),
+        0 0 60px rgba(0, 225, 255, 0.25);
+      animation: glowPulse 6s ease-in-out infinite;
+      font-family: "Orbitron", "Share Tech Mono", monospace;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+
+    @keyframes glowPulse {
+      0%, 100% {
+        text-shadow:
+          0 0 10px rgba(0, 225, 255, 0.8),
+          0 0 25px rgba(255, 42, 109, 0.3),
+          0 0 50px rgba(0, 225, 255, 0.4);
+        transform: scale(1);
+      }
+      50% {
+        text-shadow:
+          0 0 15px rgba(0, 225, 255, 1),
+          0 0 35px rgba(255, 42, 109, 0.4),
+          0 0 70px rgba(0, 225, 255, 0.6);
+        transform: scale(1.03);
+      }
+    }
+
+    .hero h2 {
+      margin: 12px 0 8px;
+      font-size: clamp(22px, 3.5vw, 34px);
+      font-weight: 700;
+      color: var(--ink);
+      text-shadow: 0 0 12px rgba(0, 225, 255, 0.25);
+    }
+
+    .hero .lead {
+      color: var(--ink-dim);
+      max-width: 820px;
+      margin: 0 auto 18px;
+    }
+
+    .cta {
+      display: inline-flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 14px;
+    }
+    .cta .btn {
+      font-size: 15px;
+      padding: 10px 18px;
+    }
+
+    /* Keep panel layout consistent */
+    .panel > summary {
+      cursor: default;
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="brand">Sarahweb</div>
-  </header>
-
-  <div class="wrap">
-    <pre id="ascii"></pre>
-    <h1>Sarahweb</h1>
-    <p>Explore real-time visual distortion and ASCII experiments.</p>
-    <div class="buttons">
-      <a class="btn" href="./lab.html">Open Distortion Lab</a>
-      <a class="btn" href="./ascii.html">Open ASCII Generator</a>
-    </div>
+  <!-- Background -->
+  <div class="bg-wrap" aria-hidden="true">
+    <canvas id="asciiBg"></canvas>
   </div>
 
+  <!-- Header (same theme bar) -->
+  <header class="top">
+    <nav class="left">
+      <span class="navlink" style="pointer-events:none;opacity:.7">Home</span>
+    </nav>
+    <h1 class="brand">Sarahweb</h1>
+    <div class="right"></div>
+  </header>
+
+  <!-- Hero section -->
+  <main class="wrap hero">
+    <div class="logo">SARAHWEB</div>
+    <h2>Distortion, Glitch & ASCII Lab</h2>
+    <p class="lead">
+      Real-time WebGL distortions, camera effects, and live ASCII rendering — all inside your browser.
+      For full webcam access, view via GitHub Pages (HTTPS) or localhost.
+    </p>
+    <div class="cta">
+      <a class="btn" href="./lab.html">🚀 Open Distortion Lab</a>
+      <a class="btn" href="./ascii.html">🔡 Open ASCII Generator</a>
+    </div>
+
+    <section class="panel" style="margin-top:28px;">
+      <summary>🧩 What’s inside</summary>
+      <div class="row">
+        <div class="ctl">
+          <span>Distortion Lab</span>
+          <div>
+            WebGL effects: Warp, RGB Split, Pixelate, VHS, CRT, Bloom, Neon Edges, Kaleidoscope, Ripple,
+            Light Leaks, Blocks, Tape Roll, Pixel Sort+, Monochrome, Motion Trail, Text Popups.
+          </div>
+        </div>
+        <div class="ctl">
+          <span>ASCII Generator</span>
+          <div>
+            Live camera → ASCII with character sets (classic, numbers, latin, binary, Cyrillic, Kana, Braille),
+            density & color controls.
+          </div>
+        </div>
+        <div class="ctl">
+          <span>Tips</span>
+          <div>
+            Shuffle effect order to discover wild combos. On slower devices, disable Bloom or CRT for smoother performance.
+          </div>
+        </div>
+        <div class="ctl">
+          <span>Compatibility</span>
+          <div>
+            WebGL-first, with 2D fallback. Works on modern browsers, mobile & desktop.
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Flowing ASCII rain background -->
   <script>
-    // Animated ASCII background
-    const el = document.getElementById('ascii');
-    const CHARS = ' .:-=+*#%@';
-    function draw() {
-      const w = Math.floor(window.innerWidth / 8);
-      const h = Math.floor(window.innerHeight / 12);
-      let out = '', t = performance.now() / 900;
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          const v = 0.5 + 0.5 * Math.sin(x * 0.12 + y * 0.18 + t * 2.0) * Math.cos(x * 0.08 - y * 0.12 + t * 1.3);
-          const i = Math.floor(v * (CHARS.length - 1));
-          out += CHARS[i];
-        }
-        out += '\n';
+    (() => {
+      const canvas = document.getElementById('asciiBg');
+      const ctx = canvas.getContext('2d', { alpha: true });
+      let W = 0, H = 0, cols = 0, drops = [], last = 0;
+
+      const SETS = [
+        "01", " .:-=+*#%@", "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        "abcdefghijklmnopqrstuvwxyz", "0123456789",
+        "アイウエオカキクケコサシスセソタチツテト",
+        "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЫЭЮЯ",
+        "⠁⠃⠉⠙⠑⠋⠛⠟⠞⠥⠩⠯⠷⠿"
+      ];
+      const CYAN = "#00e1ff", HOT = "#ff2a6d";
+
+      function resize() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        W = canvas.width = window.innerWidth * dpr;
+        H = canvas.height = window.innerHeight * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const fontSize = Math.max(12, Math.floor(W / 90));
+        ctx.font = `${fontSize}px ui-monospace, Menlo, Consolas, monospace`;
+        cols = Math.ceil(W / (fontSize * 2));
+        drops = new Array(cols).fill(0).map(() => ({
+          y: Math.random() * H,
+          sp: 2 + Math.random() * 3,
+          set: SETS[(Math.random() * SETS.length) | 0]
+        }));
       }
-      el.textContent = out;
-      requestAnimationFrame(draw);
-    }
-    draw();
+
+      function tick(ts) {
+        const dt = (ts - last) || 16; last = ts;
+        ctx.fillStyle = "rgba(10, 10, 15, 0.14)";
+        ctx.fillRect(0, 0, W, H);
+
+        const g = ctx.createLinearGradient(0, 0, W, H);
+        g.addColorStop(0, CYAN);
+        g.addColorStop(1, HOT);
+        ctx.fillStyle = g;
+
+        const stepX = Math.max(12, W / cols);
+        for (let i = 0; i < cols; i++) {
+          const d = drops[i];
+          const ch = d.set[(Math.random() * d.set.length) | 0];
+          const x = i * stepX;
+          const y = d.y;
+          ctx.fillText(ch, x, y);
+          d.y += d.sp * (1 + Math.sin(ts * 0.001 + i) * 0.2);
+          if (d.y > H + 40) {
+            d.y = -Math.random() * 80;
+            if (Math.random() < 0.08) d.set = SETS[(Math.random() * SETS.length) | 0];
+            d.sp = 2 + Math.random() * 3;
+          }
+        }
+        requestAnimationFrame(tick);
+      }
+
+      window.addEventListener('resize', resize);
+      resize();
+      requestAnimationFrame(tick);
+    })();
   </script>
 </body>
 </html>

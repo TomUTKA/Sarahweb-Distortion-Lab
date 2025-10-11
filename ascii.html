@@ -2,54 +2,62 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sarahweb — ASCII Generator v7</title>
-  <!-- Shared theme -->
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
+  <title>Sarahweb — ASCII Generator</title>
   <link rel="stylesheet" href="./lab.css" />
 </head>
 <body>
-  <!-- Top bar matches Distortion Lab -->
   <header class="top">
-    <a class="navlink" href="./index.html">⟵ Home</a>
-    <h1>Sarahweb — ASCII Generator v7</h1>
-    <button id="btnCam" class="btn sfx">🎥 Start Camera</button>
-    <button id="btnToggle" class="btn sfx">Toggle ASCII</button>
+    <nav class="left">
+      <a class="navlink" href="./index.html">⟵ Home</a>
+      <a class="navlink" href="./lab.html">Distortion Lab</a>
+    </nav>
+    <h1 class="brand">Sarahweb — ASCII Generator</h1>
+    <div class="actions right">
+      <button id="btnCam" class="btn sfx">🎥 Start Camera</button>
+      <button id="btnToggle" class="btn sfx">🔁 Toggle ASCII</button>
+    </div>
     <audio id="clickSfx"></audio>
   </header>
 
-  <!-- Settings block (same details/row layout) -->
-  <details open>
-    <summary>⚙️ Settings</summary>
-    <div class="row">
-      <label>Character Set
-        <select id="charset">
-          <option value="classic">Classic ASCII</option>
-          <option value="numbers">Numbers</option>
-          <option value="latin">Latin (A–Z, a–z)</option>
-          <option value="binary">Binary (0/1)</option>
-          <option value="cyrillic">Cyrillic</option>
-          <option value="kana">Japanese Kana</option>
-          <option value="braille">Braille</option>
-        </select>
-      </label>
+  <main class="wrap">
+    <details class="panel" open>
+      <summary>🎛️ Settings</summary>
+      <div class="row">
+        <label class="ctl">
+          <span>Character Set</span>
+          <select id="charset">
+            <option value="classic">Classic ASCII</option>
+            <option value="numbers">Numbers</option>
+            <option value="latin">Latin (A–Z, a–z)</option>
+            <option value="binary">Binary (0/1)</option>
+            <option value="cyrillic">Cyrillic</option>
+            <option value="kana">Japanese Kana</option>
+            <option value="braille">Braille</option>
+          </select>
+        </label>
+        <label class="ctl">
+          <span>Density</span>
+          <input id="density" type="number" min="2" max="16" value="8" />
+        </label>
+        <label class="ctl">
+          <span>Color</span>
+          <input id="color" type="color" value="#00e1ff" />
+        </label>
+      </div>
+    </details>
 
-      <label>Density
-        <input id="density" type="number" min="2" max="16" value="8" />
-      </label>
+    <section class="stage">
+      <canvas id="asciiCanvas"></canvas>
+      <video id="vid" autoplay playsinline muted></video>
+    </section>
 
-      <label>Color
-        <input id="color" type="color" value="#00e1ff" />
-      </label>
-    </div>
-  </details>
+    <div id="status" class="status">Waiting for camera…</div>
+  </main>
 
-  <!-- Output & camera (styled by lab.css) -->
-  <canvas id="asciiCanvas"></canvas>
-  <video id="vid" autoplay playsinline muted style="display:none"></video>
-
-  <div id="status">Waiting for camera…</div>
-
-  <!-- ASCII logic (separate file) -->
   <script src="./ascii.js"></script>
 </body>
 </html>
