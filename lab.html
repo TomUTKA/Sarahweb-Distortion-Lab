@@ -3,23 +3,27 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Sarahweb — Distortion Lab v8 (WebGL)</title>
+  <title>SarahwebFX — Distortion Lab (WebGL)</title>
 
   <!-- Canonical & SEO -->
   <link rel="canonical" href="https://www.sarahwebfx.com/lab.html" />
-  <meta name="description" content="SarahwebFX Distortion Lab — real-time WebGL camera effects: VHS, CRT, RGB split, bloom, kaleidoscope, ripple, pixel sort, trails, leaks and more." />
+  <meta name="description" content="SarahwebFX Distortion Lab — experiment with real-time WebGL camera effects: VHS, CRT, RGB split, bloom, kaleidoscope, ripple, pixel sort, trails, leaks, and more — right in your browser." />
+  <meta name="keywords" content="Sarahweb, SarahwebFX, distortion lab, glitch, WebGL, CRT, VHS, RGB split, pixel sort, ripple, kaleidoscope, trails, light leaks, effects, cyberpunk, real-time graphics" />
+  <meta name="author" content="TomUTKA" />
+  <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#0b1220" />
 
   <!-- Open Graph / Twitter -->
   <meta property="og:title" content="SarahwebFX — Distortion Lab (WebGL)" />
-  <meta property="og:description" content="Run live WebGL distortion & glitch effects in your browser." />
+  <meta property="og:description" content="Run live WebGL distortion & glitch effects in your browser — VHS, CRT, RGB split, ripple, kaleidoscope and more." />
   <meta property="og:url" content="https://www.sarahwebfx.com/lab.html" />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="https://www.sarahwebfx.com/og-card.png" />
+  <meta property="og:image" content="https://www.sarahwebfx.com/assets/og-card.png" />
+
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="SarahwebFX — Distortion Lab (WebGL)" />
-  <meta name="twitter:description" content="Run live WebGL distortion & glitch effects in your browser." />
-  <meta name="twitter:image" content="https://www.sarahwebfx.com/og-card.png" />
+  <meta name="twitter:description" content="Run live WebGL distortion & glitch effects in your browser — VHS, CRT, RGB split, ripple, kaleidoscope and more." />
+  <meta name="twitter:image" content="https://www.sarahwebfx.com/assets/og-card.png" />
 
   <link rel="stylesheet" href="./lab.css" />
 
@@ -50,7 +54,6 @@
 
   <!-- Controls -->
   <main class="wrap">
-    <!-- Core controls -->
     <details class="panel" open>
       <summary>🎛️ Core Controls</summary>
       <div class="row">
@@ -73,7 +76,7 @@
       </div>
     </details>
 
-    <!-- Effects: toggles -->
+    <!-- Effects toggles -->
     <details class="panel" open>
       <summary>✨ Effects (toggle)</summary>
       <div class="grid-3">
@@ -88,7 +91,6 @@
         <label class="sw"><input id="fx_psort" type="checkbox" /> Pixel Sort+</label>
         <label class="sw"><input id="fx_mono" type="checkbox" /> Monochrome</label>
         <label class="sw"><input id="fx_text" type="checkbox" /> Text Popups</label>
-        <!-- NEW -->
         <label class="sw"><input id="fx_crt" type="checkbox" /> CRT</label>
         <label class="sw"><input id="fx_bloom" type="checkbox" /> Bloom</label>
         <label class="sw"><input id="fx_edges" type="checkbox" /> Neon Edges</label>
@@ -97,112 +99,113 @@
       </div>
     </details>
 
-    <!-- Effect settings -->
+    <!-- Settings -->
     <details class="panel">
       <summary>🧩 Effect Settings</summary>
       <div class="row">
         <!-- CRT -->
-        <fieldset class="group">
-          <legend>CRT</legend>
-          <label class="ctl small">
-            <span>Curvature</span>
-            <input id="crt_curve" type="range" min="0" max="100" value="40" />
-          </label>
-          <label class="ctl small">
-            <span>Scanlines</span>
-            <input id="crt_scan" type="range" min="0" max="100" value="40" />
-          </label>
-        </fieldset>
+<fieldset class="group">
+  <legend>CRT</legend>
+  <label class="ctl small">
+    <span>Curvature</span>
+    <input id="crt_curve" type="range" min="0" max="100" value="40" />
+  </label>
+  <label class="ctl small">
+    <span>Scanlines</span>
+    <input id="crt_scan" type="range" min="0" max="100" value="40" />
+  </label>
+</fieldset>
 
-        <!-- Bloom -->
-        <fieldset class="group">
-          <legend>Bloom</legend>
-          <label class="ctl small">
-            <span>Threshold</span>
-            <input id="bloom_thresh" type="range" min="0" max="100" value="40" />
-          </label>
-          <label class="ctl small">
-            <span>Intensity</span>
-            <input id="bloom_amt" type="range" min="0" max="100" value="40" />
-          </label>
-        </fieldset>
+<!-- Bloom -->
+<fieldset class="group">
+  <legend>Bloom</legend>
+  <label class="ctl small">
+    <span>Threshold</span>
+    <input id="bloom_thresh" type="range" min="0" max="100" value="40" />
+  </label>
+  <label class="ctl small">
+    <span>Intensity</span>
+    <input id="bloom_amt" type="range" min="0" max="100" value="40" />
+  </label>
+</fieldset>
 
-        <!-- Edges -->
-        <fieldset class="group">
-          <legend>Neon Edges</legend>
-          <label class="ctl small">
-            <span>Strength</span>
-            <input id="edge_amt" type="range" min="0" max="100" value="40" />
-          </label>
-        </fieldset>
+<!-- Neon Edges -->
+<fieldset class="group">
+  <legend>Neon Edges</legend>
+  <label class="ctl small">
+    <span>Strength</span>
+    <input id="edge_amt" type="range" min="0" max="100" value="40" />
+  </label>
+</fieldset>
 
-        <!-- Kaleidoscope -->
-        <fieldset class="group">
-          <legend>Kaleidoscope</legend>
-          <label class="ctl small">
-            <span>Slices</span>
-            <input id="kaleido_slices" type="range" min="3" max="16" value="6" />
-          </label>
-          <label class="ctl small">
-            <span>Rotate</span>
-            <input id="kaleido_angle" type="range" min="0" max="360" value="0" />
-          </label>
-        </fieldset>
+<!-- Kaleidoscope -->
+<fieldset class="group">
+  <legend>Kaleidoscope</legend>
+  <label class="ctl small">
+    <span>Slices</span>
+    <input id="kaleido_slices" type="range" min="3" max="16" value="6" />
+  </label>
+  <label class="ctl small">
+    <span>Rotate</span>
+    <input id="kaleido_angle" type="range" min="0" max="360" value="0" />
+  </label>
+</fieldset>
 
-        <!-- Ripple -->
-        <fieldset class="group">
-          <legend>Ripple</legend>
-          <label class="ctl small">
-            <span>Radius</span>
-            <input id="ripple_radius" type="range" min="0" max="100" value="40" />
-          </label>
-          <label class="ctl small">
-            <span>Strength</span>
-            <input id="ripple_amt" type="range" min="0" max="100" value="40" />
-          </label>
-        </fieldset>
+<!-- Ripple -->
+<fieldset class="group">
+  <legend>Ripple</legend>
+  <label class="ctl small">
+    <span>Radius</span>
+    <input id="ripple_radius" type="range" min="0" max="100" value="40" />
+  </label>
+  <label class="ctl small">
+    <span>Strength</span>
+    <input id="ripple_amt" type="range" min="0" max="100" value="40" />
+  </label>
+</fieldset>
 
-        <!-- Pixel Sort+ -->
-        <fieldset class="group">
-          <legend>Pixel Sort+</legend>
-          <label class="ctl small">
-            <span>Threshold</span>
-            <input id="psort_thresh" type="range" min="0" max="100" value="40" />
-          </label>
-          <label class="ctl small">
-            <span>Direction</span>
-            <select id="psort_dir">
-              <option value="h" selected>Horizontal</option>
-              <option value="v">Vertical</option>
-            </select>
-          </label>
-        </fieldset>
+<!-- Pixel Sort+ -->
+<fieldset class="group">
+  <legend>Pixel Sort+</legend>
+  <label class="ctl small">
+    <span>Threshold</span>
+    <input id="psort_thresh" type="range" min="0" max="100" value="40" />
+  </label>
+  <label class="ctl small">
+    <span>Direction</span>
+    <select id="psort_dir">
+      <option value="h" selected>Horizontal</option>
+      <option value="v">Vertical</option>
+    </select>
+  </label>
+</fieldset>
 
-        <!-- Monochrome -->
-        <fieldset class="group">
-          <legend>Monochrome</legend>
-          <label class="ctl small">
-            <span>Color A</span>
-            <input id="mono_a" type="color" value="#00ffcc" />
-          </label>
-          <label class="ctl small">
-            <span>Color B</span>
-            <input id="mono_b" type="color" value="#220022" />
-          </label>
-        </fieldset>
+<!-- Monochrome -->
+<fieldset class="group">
+  <legend>Monochrome</legend>
+  <label class="ctl small">
+    <span>Color A</span>
+    <input id="mono_a" type="color" value="#00ffcc" />
+  </label>
+  <label class="ctl small">
+    <span>Color B</span>
+    <input id="mono_b" type="color" value="#220022" />
+  </label>
+</fieldset>
 
-        <!-- Text -->
-        <fieldset class="group">
-          <legend>Text Popups</legend>
-          <label class="ctl small">
-            <span>Duration (ms)</span>
-            <input id="text_ms" type="number" min="200" max="5000" value="1400" />
-          </label>
-        </fieldset>
+<!-- Text Popups -->
+<fieldset class="group">
+  <legend>Text Popups</legend>
+  <label class="ctl small">
+    <span>Duration (ms)</span>
+    <input id="text_ms" type="number" min="200" max="5000" value="1400" />
+  </label>
+</fieldset>
+
       </div>
     </details>
 
-    <!-- Pipeline order + alt shuffle -->
+    <!-- Pipeline order -->
     <details class="panel">
       <summary>🧪 Pipeline Order</summary>
       <div class="row">
