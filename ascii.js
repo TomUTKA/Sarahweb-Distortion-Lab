@@ -74,13 +74,13 @@
     requestAnimationFrame(render);
 
     const w = canvas.width, h = canvas.height;
-    const density = clampInt(parseInt(densityEl.value || '8', 10), 2, 16);
-    const color = colorEl.value || '#00e1ff';
-    const mode = (charsetEl.value || 'classic');
+    const density = clampInt(parseInt(densityEl.value || '12', 10), 2, 48); // higher → finer detail
+    const color   = colorEl.value || '#00e1ff';
+    const mode    = (charsetEl.value || 'classic');
     const charset = sets[mode] || sets.classic;
     const isBinary = (mode === 'binary');
 
-    // Draw latest frame (mirrored feels nicer; remove scale if you don't want mirror)
+    // Draw latest frame (mirrored)
     ctx.save();
     ctx.scale(-1, 1);
     ctx.drawImage(vid, -w, 0, w, h);
@@ -90,30 +90,37 @@
     const frame = ctx.getImageData(0, 0, w, h);
     const data = frame.data;
 
-    // --- Adaptive exposure (mean luminance) ---
-    // Sample every Nth pixel for speed
+    // --- Adaptive exposure ---
     let sum = 0, count = 0;
-    const step = 4 * 16; // sample roughly every 16 pixels
+    const step = 4 * 16;
     for (let i = 0; i < data.length; i += step) {
       sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
       count++;
     }
-    const meanL = (sum / count) / 255;               // 0..1
+    const meanL = (sum / count) / 255;
     const targetMid = 0.5;
     const gain = clamp(targetMid / Math.max(0.08, meanL), 0.6, 1.8);
     const contrast = 1.12;
 
-    // Clear and prep text style
+    // --- Density-based scaling ---
+    const targetCols = Math.max(40, Math.round(80 * (density / 8)));
+    let cell = Math.max(3, Math.floor(w / targetCols));
+    let cols = Math.max(1, Math.floor(w / cell));
+    let rows = Math.max(1, Math.floor(h / cell));
+
+    const MAX_GLYPHS = 120000; // safety cap
+    if (cols * rows > MAX_GLYPHS) {
+      const scale = Math.sqrt((cols * rows) / MAX_GLYPHS);
+      cell = Math.max(3, Math.floor(cell * scale));
+      cols = Math.max(1, Math.floor(w / cell));
+      rows = Math.max(1, Math.floor(h / cell));
+    }
+
     ctx.clearRect(0, 0, w, h);
-    const cell = Math.max(4, Math.floor(Math.min(w, h) / (Math.max(w, h) / (80 * (8 / density)))));
     ctx.fillStyle = color;
     ctx.font = `${Math.floor(cell * 0.9)}px ui-monospace, Menlo, Consolas, monospace`;
     ctx.textBaseline = 'top';
 
-    const cols = Math.floor(w / cell);
-    const rows = Math.floor(h / cell);
-
-    // Small temporal wiggle so binary doesn't freeze with static scenes
     const t = (performance.now() % 1000) / 1000;
 
     for (let r = 0; r < rows; r++) {
@@ -126,13 +133,11 @@
 
         // luminance 0..1
         let L = (0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]) / 255;
-        // apply adaptive exposure + gentle contrast
         L = clamp((L * gain), 0, 1);
         L = clamp((L - 0.5) * contrast + 0.5, 0, 1);
 
         let ch = ' ';
         if (isBinary) {
-          // Ordered dithering threshold with tiny temporal offset
           const b = B4[r & 3][c & 3];
           const thr = clamp(0.48 + 0.08 * Math.sin(6.283 * t) + (b - 0.5) * 0.25, 0.25, 0.75);
           ch = (L > thr) ? '1' : '0';
@@ -141,11 +146,7 @@
           ch = charset[idx] || charset[0];
         }
 
-        if (asciiMode) {
-          ctx.fillText(ch, x, y);
-        } else {
-          // raw video view: just keep what was drawn above
-        }
+        if (asciiMode) ctx.fillText(ch, x, y);
       }
     }
   }
