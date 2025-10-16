@@ -7,7 +7,7 @@
   const colorEl = document.getElementById('color');
   const btnCam = document.getElementById('btnCam');
   const btnToggle = document.getElementById('btnToggle');
-  const status = (m) => { document.getElementById('status').textContent = m; };
+  const setStatus = (m) => { const s = document.getElementById('status'); if (s) s.textContent = m; };
 
   // click sfx
   const clickSfx = document.getElementById('clickSfx');
@@ -18,18 +18,30 @@
     );
   }
 
+  // Character sets (light → dark for non-binary)
   const sets = {
-    classic: " .:-=+*#%@",
-    numbers: "0123456789",
-    latin: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+    classic: " .'`\",:^;Il!i~-_+?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$",
+    numbers: " 1234567890",
+    latin: " .,:;!iI1l|/\\rjtfLCJUYXzcvunxrjft|()[]{}?-_+~<>i!lI;:,'^`\". ",
     binary: "01",
-    cyrillic: "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ",
-    kana: "アイウエオカキクケコサシスセソタチツテトナニヌネノ",
-    braille: "⠁⠂⠄⠈⠐⠠⠡⠣⠥⠧⠩⠫⠭⠯⠷⠿"
+    cyrillic: " .·:-=+*#ЖШЩЭЮЯ",
+    kana: " .｡ｧｨｩｪｫｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜｦﾝ",
+    braille: " ⠁⠃⠇⠏⠟⠿"
   };
+
+  // 4×4 Bayer matrix normalized to [0..1)
+  const B4 = [
+    [ 0,  8,  2, 10],
+    [12,  4, 14,  6],
+    [ 3, 11,  1,  9],
+    [15,  7, 13,  5]
+  ].map(r => r.map(v => (v + 0.5) / 16));
 
   let running = false;
   let asciiMode = true;
+
+  btnCam.onclick = startCam;
+  btnToggle.onclick = () => (asciiMode = !asciiMode);
 
   async function startCam() {
     if (!(location.protocol === 'https:' || location.hostname === 'localhost')) {
@@ -42,53 +54,103 @@
         audio: false
       });
       vid.srcObject = stream;
-      status("Camera access granted. Waiting for feed…");
+      setStatus("Camera access granted. Waiting for feed…");
       vid.onloadedmetadata = () => {
         vid.play();
         canvas.width = vid.videoWidth || 640;
         canvas.height = vid.videoHeight || 480;
         running = true;
-        status("Camera started.");
+        setStatus(`Camera started (${canvas.width}×${canvas.height})`);
         render();
       };
     } catch (e) {
       console.error(e);
-      status("Camera error: " + e.message);
+      setStatus("Camera error: " + e.message);
     }
   }
-
-  btnCam.onclick = startCam;
-  btnToggle.onclick = () => (asciiMode = !asciiMode);
 
   function render() {
     if (!running) return;
     requestAnimationFrame(render);
 
     const w = canvas.width, h = canvas.height;
-    const d = parseInt(densityEl.value, 10);
-    const charset = sets[charsetEl.value] || sets.classic;
+    const density = clampInt(parseInt(densityEl.value || '8', 10), 2, 16);
+    const color = colorEl.value || '#00e1ff';
+    const mode = (charsetEl.value || 'classic');
+    const charset = sets[mode] || sets.classic;
+    const isBinary = (mode === 'binary');
 
-    // Draw current video frame
-    ctx.drawImage(vid, 0, 0, w, h);
+    // Draw latest frame (mirrored feels nicer; remove scale if you don't want mirror)
+    ctx.save();
+    ctx.scale(-1, 1);
+    ctx.drawImage(vid, -w, 0, w, h);
+    ctx.restore();
 
-    if (!asciiMode) return; // show raw video if toggled off
-
-    // Read pixels then render ASCII
+    // Read pixels
     const frame = ctx.getImageData(0, 0, w, h);
+    const data = frame.data;
+
+    // --- Adaptive exposure (mean luminance) ---
+    // Sample every Nth pixel for speed
+    let sum = 0, count = 0;
+    const step = 4 * 16; // sample roughly every 16 pixels
+    for (let i = 0; i < data.length; i += step) {
+      sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+      count++;
+    }
+    const meanL = (sum / count) / 255;               // 0..1
+    const targetMid = 0.5;
+    const gain = clamp(targetMid / Math.max(0.08, meanL), 0.6, 1.8);
+    const contrast = 1.12;
+
+    // Clear and prep text style
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = colorEl.value;
-    ctx.font = `${d * 1.5}px monospace`;
+    const cell = Math.max(4, Math.floor(Math.min(w, h) / (Math.max(w, h) / (80 * (8 / density)))));
+    ctx.fillStyle = color;
+    ctx.font = `${Math.floor(cell * 0.9)}px ui-monospace, Menlo, Consolas, monospace`;
     ctx.textBaseline = 'top';
 
-    for (let y = 0; y < h; y += d * 2) {
-      for (let x = 0; x < w; x += d) {
-        const i = (y * w + x) * 4;
-        const r = frame.data[i], g = frame.data[i + 1], b = frame.data[i + 2];
-        const brightness = (r + g + b) / 3;
-        const index = Math.floor((brightness / 255) * (charset.length - 1));
-        const ch = charset[index] || " ";
-        ctx.fillText(ch, x, y);
+    const cols = Math.floor(w / cell);
+    const rows = Math.floor(h / cell);
+
+    // Small temporal wiggle so binary doesn't freeze with static scenes
+    const t = (performance.now() % 1000) / 1000;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = c * cell;
+        const y = r * cell;
+        const sx = Math.min(w - 1, x + (cell >> 1));
+        const sy = Math.min(h - 1, y + (cell >> 1));
+        const i = (sy * w + sx) * 4;
+
+        // luminance 0..1
+        let L = (0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]) / 255;
+        // apply adaptive exposure + gentle contrast
+        L = clamp((L * gain), 0, 1);
+        L = clamp((L - 0.5) * contrast + 0.5, 0, 1);
+
+        let ch = ' ';
+        if (isBinary) {
+          // Ordered dithering threshold with tiny temporal offset
+          const b = B4[r & 3][c & 3];
+          const thr = clamp(0.48 + 0.08 * Math.sin(6.283 * t) + (b - 0.5) * 0.25, 0.25, 0.75);
+          ch = (L > thr) ? '1' : '0';
+        } else {
+          const idx = Math.floor(L * (charset.length - 1));
+          ch = charset[idx] || charset[0];
+        }
+
+        if (asciiMode) {
+          ctx.fillText(ch, x, y);
+        } else {
+          // raw video view: just keep what was drawn above
+        }
       }
     }
   }
+
+  // utils
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function clampInt(v, lo, hi) { v |= 0; return clamp(v, lo, hi); }
 })();
