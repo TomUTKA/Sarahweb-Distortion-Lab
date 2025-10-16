@@ -47,6 +47,78 @@
     psort_dir:     $('psort_dir') // 'h' or 'v'
   };
 
+  // ---------- Include-for-Randomize (⭐) ----------
+  const EFFECT_KEYS = [
+    'cpunk','invert','leak','vhs','tape','blocks','trail','binary','psort','mono','text','crt','bloom','edges','kaleido','ripple'
+  ];
+
+  // map effect -> elements
+  const inc = {};
+  for (const k of EFFECT_KEYS) inc[k] = $(`inc_${k}`);
+
+  const randSummary = $('randSummary');
+  const btnIncAll   = $('incAll');
+  const btnIncNone  = $('incNone');
+
+  // persist include pool
+  const STORE_KEY = 'swfx_randomize_pool_v1';
+
+  function loadIncludePool() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return;
+      const arr = JSON.parse(raw);
+      const set = new Set(arr);
+      for (const k of EFFECT_KEYS) {
+        if (!inc[k]) continue;
+        inc[k].checked = set.has(k);
+      }
+    } catch {}
+  }
+  function saveIncludePool() {
+    try {
+      const pool = getIncludePool();
+      localStorage.setItem(STORE_KEY, JSON.stringify(pool));
+    } catch {}
+  }
+  function getIncludePool() {
+    const list = [];
+    for (const k of EFFECT_KEYS) {
+      if (inc[k]?.checked) list.push(k);
+    }
+    return list;
+  }
+  function updateRandSummary() {
+    if (!randSummary) return;
+    const pool = getIncludePool();
+    randSummary.textContent = pool.length
+      ? `Randomize will use: ${pool.join(', ')}`
+      : `Randomize will use: (none — toggle ⭐ to include effects)`;
+  }
+
+  // wire star checkboxes
+  for (const k of EFFECT_KEYS) {
+    if (!inc[k]) continue;
+    inc[k].addEventListener('change', () => {
+      saveIncludePool();
+      updateRandSummary();
+    });
+  }
+  // wire Select All / None
+  btnIncAll?.addEventListener('click', () => {
+    for (const k of EFFECT_KEYS) if (inc[k]) inc[k].checked = true;
+    saveIncludePool(); updateRandSummary();
+  });
+  btnIncNone?.addEventListener('click', () => {
+    for (const k of EFFECT_KEYS) if (inc[k]) inc[k].checked = false;
+    saveIncludePool(); updateRandSummary();
+  });
+
+  // load persisted pool (once DOM is ready enough)
+  loadIncludePool();
+  updateRandSummary();
+
+  // ---------- Buttons ----------
   $('btnCam')?.addEventListener('click', startCam);
   $('btnRandom')?.addEventListener('click', randomizeAll);
   $('btnShuffle')?.addEventListener('click', shuffleOrder);
@@ -60,7 +132,85 @@
     );
   }
 
-  // Effect pipeline order
+  // ---------- Randomize logic ----------
+  function randomizeAll(){
+    // Always randomize core globals (as before)
+    if (ui.cell)  ui.cell.value  = (Math.random()*64+8)|0;
+    if (ui.str)   ui.str.value   = (Math.random()*70+10)|0;
+    if (ui.rgb)   ui.rgb.value   = (Math.random()*80)|0;
+    if (ui.speed) ui.speed.value = (Math.random()*80+10)|0;
+
+    // Only randomize INCLUDED effects + their params
+    const pool = new Set(getIncludePool()); // e.g., { 'vhs','bloom' }
+
+    // toggles
+    const toggleMap = {
+      cpunk:  ui.fx_cpunk,
+      invert: ui.fx_invert,
+      leak:   ui.fx_leak,
+      vhs:    ui.fx_vhs,
+      tape:   ui.fx_tape,
+      blocks: ui.fx_blocks,
+      trail:  ui.fx_trail,
+      binary: ui.fx_binary,
+      psort:  ui.fx_psort,
+      mono:   ui.fx_mono,
+      text:   ui.fx_text,
+      crt:    ui.fx_crt,
+      bloom:  ui.fx_bloom,
+      edges:  ui.fx_edges,
+      kaleido:ui.fx_kaleido,
+      ripple: ui.fx_ripple
+    };
+
+    for (const k of EFFECT_KEYS) {
+      // leave non-included effects untouched
+      if (!pool.has(k)) continue;
+      const el = toggleMap[k];
+      if (el) el.checked = Math.random() > 0.5;
+      // param ranges per effect (only if included)
+      switch (k) {
+        case 'crt':
+          if (ui.crt_curve) ui.crt_curve.value = (Math.random()*60+20)|0;
+          if (ui.crt_scan)  ui.crt_scan.value  = (Math.random()*80)|0;
+          break;
+        case 'bloom':
+          if (ui.bloom_thresh) ui.bloom_thresh.value = (Math.random()*60+20)|0;
+          if (ui.bloom_amt)    ui.bloom_amt.value    = (Math.random()*80+10)|0;
+          break;
+        case 'edges':
+          if (ui.edge_amt) ui.edge_amt.value = (Math.random()*80+10)|0;
+          break;
+        case 'kaleido':
+          if (ui.kaleido_slices) ui.kaleido_slices.value = (Math.random()*10+4)|0;
+          if (ui.kaleido_angle)  ui.kaleido_angle.value  = (Math.random()*360)|0;
+          break;
+        case 'ripple':
+          if (ui.ripple_radius) ui.ripple_radius.value = (Math.random()*60+20)|0;
+          if (ui.ripple_amt)    ui.ripple_amt.value    = (Math.random()*60+20)|0;
+          break;
+        case 'psort':
+          if (ui.psort_thresh) ui.psort_thresh.value = (Math.random()*80+10)|0;
+          if (ui.psort_dir)    ui.psort_dir.value    = Math.random()>0.5 ? 'h' : 'v';
+          break;
+        case 'mono':
+          if (ui.mono_a) ui.mono_a.value = randHex();
+          if (ui.mono_b) ui.mono_b.value = randHex();
+          break;
+        // others have no unique sliders (leak/vhs use core speed/strength which we already randomized)
+      }
+    }
+
+    shuffleOrder(); // still fun to shuffle pipeline
+  }
+
+  function randHex(){
+    const r = () => (Math.random()*255)|0;
+    const h = (n)=> n.toString(16).padStart(2,'0');
+    return `#${h(r())}${h(r())}${h(r())}`;
+  }
+
+  // ---------- Effect pipeline order ----------
   let order = [
     'kaleido','warp','ripple','pixel','rgb','sobel','vhs','crt','bloom','cpunk',
     'invert','leak','tape','binary','trail','mono','hudText','blocks','psort'
@@ -72,28 +222,6 @@
     const arr = order.slice();
     for (let i=arr.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]]; }
     order = arr; showOrder();
-  }
-  function randomizeAll(){
-    if (ui.cell)  ui.cell.value  = (Math.random()*64+8)|0;
-    if (ui.str)   ui.str.value   = (Math.random()*70+10)|0;
-    if (ui.rgb)   ui.rgb.value   = (Math.random()*80)|0;
-    if (ui.speed) ui.speed.value = (Math.random()*80+10)|0;
-    ['fx_trail','fx_vhs','fx_cpunk','fx_invert','fx_binary','fx_text','fx_blocks','fx_leak','fx_tape','fx_psort','fx_mono',
-     'fx_crt','fx_bloom','fx_edges','fx_kaleido','fx_ripple'
-    ].forEach(k => ui[k] && (ui[k].checked = Math.random()>0.5));
-    // new sliders random defaults
-    if (ui.crt_curve)     ui.crt_curve.value = (Math.random()*60+20)|0;
-    if (ui.crt_scan)      ui.crt_scan.value = (Math.random()*80)|0;
-    if (ui.bloom_thresh)  ui.bloom_thresh.value = (Math.random()*60+20)|0;
-    if (ui.bloom_amt)     ui.bloom_amt.value = (Math.random()*80+10)|0;
-    if (ui.edge_amt)      ui.edge_amt.value = (Math.random()*80+10)|0;
-    if (ui.kaleido_slices)ui.kaleido_slices.value = (Math.random()*10+4)|0;
-    if (ui.kaleido_angle) ui.kaleido_angle.value = (Math.random()*360)|0;
-    if (ui.ripple_radius) ui.ripple_radius.value = (Math.random()*60+20)|0;
-    if (ui.ripple_amt)    ui.ripple_amt.value = (Math.random()*60+20)|0;
-    if (ui.psort_thresh)  ui.psort_thresh.value = (Math.random()*80+10)|0;
-    if (ui.psort_dir)     ui.psort_dir.value = Math.random()>0.5?'h':'v';
-    shuffleOrder();
   }
 
   // ---------- Camera ----------
@@ -336,7 +464,6 @@
         if (uv.x<0.0||uv.x>1.0||uv.y<0.0||uv.y>1.0) { gl_FragColor=vec4(0.0); return; }
         vec3 c = texture2D(uTex, uv).rgb;
         float scan = 1.0 - uScan*0.01 * (0.5+0.5*sin(uv.y*800.0));
-        // simple shadow mask
         float mask = 0.85 + 0.15*sin(uv.x*1440.0);
         gl_FragColor = vec4(c*scan*mask,1.0);
       }`);
@@ -433,6 +560,17 @@
     hudTex=mkTex(w,h);
   }
 
+  function use(p){
+    gl.useProgram(p);
+    const aPos=gl.getAttribLocation(p,'aPos');
+    const aUV =gl.getAttribLocation(p,'aUV');
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    gl.enableVertexAttribArray(aPos); gl.enableVertexAttribArray(aUV);
+    gl.vertexAttribPointer(aPos,2,gl.FLOAT,false,16,0);
+    gl.vertexAttribPointer(aUV ,2,gl.FLOAT,false,16,8);
+    const uRes=gl.getUniformLocation(p,'uRes'); if(uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
+    const uTime=gl.getUniformLocation(p,'uTime'); if(uTime) gl.uniform1f(uTime, performance.now()/1000);
+  }
   function drawTo(texIn, fbOut, prog, uniforms){
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbOut);
     use(prog);
@@ -442,6 +580,17 @@
     gl.drawArrays(gl.TRIANGLES,0,6);
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
   }
+  function mkTex(w,h){ const t=gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D,t);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null); return t; }
+  function mkFBO(tex){ const f=gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER,f);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null); return f; }
 
   // =======================================================
   // =================== 2D Fallback =======================

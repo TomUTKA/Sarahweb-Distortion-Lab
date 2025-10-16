@@ -35,7 +35,15 @@
     gtag('js', new Date());
     gtag('config', 'G-GY3DYE1NW1');
   </script>
+
+  <style>
+    /* Optional layout tweak for include stars */
+    .sw { display:flex; align-items:center; justify-content:space-between; }
+    .sw .inc { display:inline-flex; align-items:center; gap:6px; opacity:.85; }
+    .sw .inc input { transform: translateY(1px); }
+  </style>
 </head>
+
 <body>
   <!-- Top bar -->
   <header class="top">
@@ -54,154 +62,65 @@
 
   <!-- Controls -->
   <main class="wrap">
+    <!-- Core controls -->
     <details class="panel" open>
       <summary>🎛️ Core Controls</summary>
       <div class="row">
-        <label class="ctl">
-          <span>Strength</span>
-          <input id="strength" type="range" min="0" max="100" value="35" />
-        </label>
-        <label class="ctl">
-          <span>Speed</span>
-          <input id="speed" type="range" min="0" max="100" value="50" />
-        </label>
-        <label class="ctl">
-          <span>RGB Split</span>
-          <input id="rgb" type="range" min="0" max="100" value="18" />
-        </label>
-        <label class="ctl">
-          <span>Pixel Size</span>
-          <input id="cell" type="range" min="4" max="128" value="32" />
-        </label>
+        <label class="ctl"><span>Strength</span><input id="strength" type="range" min="0" max="100" value="35" /></label>
+        <label class="ctl"><span>Speed</span><input id="speed" type="range" min="0" max="100" value="50" /></label>
+        <label class="ctl"><span>RGB Split</span><input id="rgb" type="range" min="0" max="100" value="18" /></label>
+        <label class="ctl"><span>Pixel Size</span><input id="cell" type="range" min="4" max="128" value="32" /></label>
       </div>
     </details>
 
     <!-- Effects toggles -->
     <details class="panel" open>
       <summary>✨ Effects (toggle)</summary>
-      <div class="grid-3">
-        <label class="sw"><input id="fx_cpunk" type="checkbox" /> Cyberpunk</label>
-        <label class="sw"><input id="fx_invert" type="checkbox" /> Invert</label>
-        <label class="sw"><input id="fx_leak" type="checkbox" /> Light Leaks</label>
-        <label class="sw"><input id="fx_vhs" type="checkbox" /> VHS</label>
-        <label class="sw"><input id="fx_tape" type="checkbox" /> Tape Roll</label>
-        <label class="sw"><input id="fx_blocks" type="checkbox" /> Glitch Blocks</label>
-        <label class="sw"><input id="fx_trail" type="checkbox" /> Motion Trail</label>
-        <label class="sw"><input id="fx_binary" type="checkbox" /> Binary Overlay</label>
-        <label class="sw"><input id="fx_psort" type="checkbox" /> Pixel Sort+</label>
-        <label class="sw"><input id="fx_mono" type="checkbox" /> Monochrome</label>
-        <label class="sw"><input id="fx_text" type="checkbox" /> Text Popups</label>
-        <label class="sw"><input id="fx_crt" type="checkbox" /> CRT</label>
-        <label class="sw"><input id="fx_bloom" type="checkbox" /> Bloom</label>
-        <label class="sw"><input id="fx_edges" type="checkbox" /> Neon Edges</label>
-        <label class="sw"><input id="fx_kaleido" type="checkbox" /> Kaleidoscope</label>
-        <label class="sw"><input id="fx_ripple" type="checkbox" /> Ripple</label>
+
+      <!-- Randomize pool controls -->
+      <div class="row" style="align-items:center; gap:12px; margin-bottom:8px;">
+        <strong>Randomize Pool:</strong>
+        <button id="incAll" class="btn sfx" type="button">Select All</button>
+        <button id="incNone" class="btn sfx" type="button">Select None</button>
+        <span class="hint">Only ⭐ included effects will be randomized.</span>
       </div>
+
+      <div class="grid-3">
+        <!-- Each effect -->
+        <label class="sw"><input id="fx_cpunk" type="checkbox" /> Cyberpunk<span class="inc"><input id="inc_cpunk" type="checkbox" /> ⭐</span></label>
+        <label class="sw"><input id="fx_invert" type="checkbox" /> Invert<span class="inc"><input id="inc_invert" type="checkbox" /> ⭐</span></label>
+        <label class="sw"><input id="fx_leak" type="checkbox" /> Light Leaks<span class="inc"><input id="inc_leak" type="checkbox" /> ⭐</span></label>
+        <label class="sw"><input id="fx_vhs" type="checkbox" /> VHS<span class="inc"><input id="inc_vhs" type="checkbox" /> ⭐</span></label>
+        <label class="sw"><input id="fx_tape" type="checkbox" /> Tape Roll<span class="inc"><input id="inc_tape" type="checkbox" /> ⭐</span></label>
+        <label class="sw"><input id="fx_blocks" type="checkbox" /> Glitch Blocks<span class="inc"><input id="inc_blocks" type="checkbox" /> ⭐</span></label>
+        <label class="sw"><input id="fx_trail" type="checkbox" /> Motion Trail<span class="inc"><input id="inc_trail" type="checkbox" /> ⭐</span></label>
+        <label class="sw"><input id="fx_binary" type="checkbox" /> Binary Overlay<span class="inc"><input id="inc_binary" type="checkbox" /> ⭐</span></label>
+        <label class="sw"><input id="fx_psort" type="checkbox" /> Pixel Sort+<span class="inc"><input id="inc_psort" type="checkbox" /> ⭐</span></label>
+        <label class="sw"><input id="fx_mono" type="checkbox" /> Monochrome<span class="inc"><input id="inc_mono" type="checkbox" /> ⭐</span></label>
+        <label class="sw"><input id="fx_text" type="checkbox" /> Text Popups<span class="inc"><input id="inc_text" type="checkbox" /> ⭐</span></label>
+        <label class="sw"><input id="fx_crt" type="checkbox" /> CRT<span class="inc"><input id="inc_crt" type="checkbox" /> ⭐</span></label>
+        <label class="sw"><input id="fx_bloom" type="checkbox" /> Bloom<span class="inc"><input id="inc_bloom" type="checkbox" /> ⭐</span></label>
+        <label class="sw"><input id="fx_edges" type="checkbox" /> Neon Edges<span class="inc"><input id="inc_edges" type="checkbox" /> ⭐</span></label>
+        <label class="sw"><input id="fx_kaleido" type="checkbox" /> Kaleidoscope<span class="inc"><input id="inc_kaleido" type="checkbox" /> ⭐</span></label>
+        <label class="sw"><input id="fx_ripple" type="checkbox" /> Ripple<span class="inc"><input id="inc_ripple" type="checkbox" /> ⭐</span></label>
+      </div>
+
+      <div class="hint" id="randSummary" style="margin-top:10px;">Randomize will use: (none yet)</div>
     </details>
 
     <!-- Settings -->
     <details class="panel">
       <summary>🧩 Effect Settings</summary>
       <div class="row">
-        <!-- CRT -->
-<fieldset class="group">
-  <legend>CRT</legend>
-  <label class="ctl small">
-    <span>Curvature</span>
-    <input id="crt_curve" type="range" min="0" max="100" value="40" />
-  </label>
-  <label class="ctl small">
-    <span>Scanlines</span>
-    <input id="crt_scan" type="range" min="0" max="100" value="40" />
-  </label>
-</fieldset>
-
-<!-- Bloom -->
-<fieldset class="group">
-  <legend>Bloom</legend>
-  <label class="ctl small">
-    <span>Threshold</span>
-    <input id="bloom_thresh" type="range" min="0" max="100" value="40" />
-  </label>
-  <label class="ctl small">
-    <span>Intensity</span>
-    <input id="bloom_amt" type="range" min="0" max="100" value="40" />
-  </label>
-</fieldset>
-
-<!-- Neon Edges -->
-<fieldset class="group">
-  <legend>Neon Edges</legend>
-  <label class="ctl small">
-    <span>Strength</span>
-    <input id="edge_amt" type="range" min="0" max="100" value="40" />
-  </label>
-</fieldset>
-
-<!-- Kaleidoscope -->
-<fieldset class="group">
-  <legend>Kaleidoscope</legend>
-  <label class="ctl small">
-    <span>Slices</span>
-    <input id="kaleido_slices" type="range" min="3" max="16" value="6" />
-  </label>
-  <label class="ctl small">
-    <span>Rotate</span>
-    <input id="kaleido_angle" type="range" min="0" max="360" value="0" />
-  </label>
-</fieldset>
-
-<!-- Ripple -->
-<fieldset class="group">
-  <legend>Ripple</legend>
-  <label class="ctl small">
-    <span>Radius</span>
-    <input id="ripple_radius" type="range" min="0" max="100" value="40" />
-  </label>
-  <label class="ctl small">
-    <span>Strength</span>
-    <input id="ripple_amt" type="range" min="0" max="100" value="40" />
-  </label>
-</fieldset>
-
-<!-- Pixel Sort+ -->
-<fieldset class="group">
-  <legend>Pixel Sort+</legend>
-  <label class="ctl small">
-    <span>Threshold</span>
-    <input id="psort_thresh" type="range" min="0" max="100" value="40" />
-  </label>
-  <label class="ctl small">
-    <span>Direction</span>
-    <select id="psort_dir">
-      <option value="h" selected>Horizontal</option>
-      <option value="v">Vertical</option>
-    </select>
-  </label>
-</fieldset>
-
-<!-- Monochrome -->
-<fieldset class="group">
-  <legend>Monochrome</legend>
-  <label class="ctl small">
-    <span>Color A</span>
-    <input id="mono_a" type="color" value="#00ffcc" />
-  </label>
-  <label class="ctl small">
-    <span>Color B</span>
-    <input id="mono_b" type="color" value="#220022" />
-  </label>
-</fieldset>
-
-<!-- Text Popups -->
-<fieldset class="group">
-  <legend>Text Popups</legend>
-  <label class="ctl small">
-    <span>Duration (ms)</span>
-    <input id="text_ms" type="number" min="200" max="5000" value="1400" />
-  </label>
-</fieldset>
-
+        <!-- Your existing fieldsets (CRT, Bloom, etc.) -->
+        <fieldset class="group"><legend>CRT</legend><label class="ctl small"><span>Curvature</span><input id="crt_curve" type="range" min="0" max="100" value="40" /></label><label class="ctl small"><span>Scanlines</span><input id="crt_scan" type="range" min="0" max="100" value="40" /></label></fieldset>
+        <fieldset class="group"><legend>Bloom</legend><label class="ctl small"><span>Threshold</span><input id="bloom_thresh" type="range" min="0" max="100" value="40" /></label><label class="ctl small"><span>Intensity</span><input id="bloom_amt" type="range" min="0" max="100" value="40" /></label></fieldset>
+        <fieldset class="group"><legend>Neon Edges</legend><label class="ctl small"><span>Strength</span><input id="edge_amt" type="range" min="0" max="100" value="40" /></label></fieldset>
+        <fieldset class="group"><legend>Kaleidoscope</legend><label class="ctl small"><span>Slices</span><input id="kaleido_slices" type="range" min="3" max="16" value="6" /></label><label class="ctl small"><span>Rotate</span><input id="kaleido_angle" type="range" min="0" max="360" value="0" /></label></fieldset>
+        <fieldset class="group"><legend>Ripple</legend><label class="ctl small"><span>Radius</span><input id="ripple_radius" type="range" min="0" max="100" value="40" /></label><label class="ctl small"><span>Strength</span><input id="ripple_amt" type="range" min="0" max="100" value="40" /></label></fieldset>
+        <fieldset class="group"><legend>Pixel Sort+</legend><label class="ctl small"><span>Threshold</span><input id="psort_thresh" type="range" min="0" max="100" value="40" /></label><label class="ctl small"><span>Direction</span><select id="psort_dir"><option value="h" selected>Horizontal</option><option value="v">Vertical</option></select></label></fieldset>
+        <fieldset class="group"><legend>Monochrome</legend><label class="ctl small"><span>Color A</span><input id="mono_a" type="color" value="#00ffcc" /></label><label class="ctl small"><span>Color B</span><input id="mono_b" type="color" value="#220022" /></label></fieldset>
+        <fieldset class="group"><legend>Text Popups</legend><label class="ctl small"><span>Duration (ms)</span><input id="text_ms" type="number" min="200" max="5000" value="1400" /></label></fieldset>
       </div>
     </details>
 
