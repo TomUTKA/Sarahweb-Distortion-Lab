@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>About — SarahwebFX</title>
+  <link rel="canonical" href="https://www.sarahwebfx.com/about.html" />
+  <meta name="description" content="Learn the story behind SarahwebFX, the real-time WebGL Distortion Lab and ASCII camera made for glitch visuals." />
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="stylesheet" href="./lab.css" />
+  <style>
+    /* keep footer at bottom without touching your theme */
+    body,html{height:100%}
+    .page{min-height:100%;display:flex;flex-direction:column}
+    main.wrap{flex:1}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="top">
+      <nav class="left">
+        <a class="navlink" href="./index.html">⟵ Home</a>
+        <a class="navlink" href="./lab.html">Distortion Lab</a>
+        <a class="navlink" href="./ascii.html">ASCII Generator</a>
+      </nav>
+      <h1 class="brand">Sarahweb</h1>
+      <div class="right"></div>
+    </header>
+
+    <main class="wrap" style="max-width:880px">
+      <h1>About SarahwebFX</h1>
+      <p>
+        <strong>SarahwebFX</strong> is a browser-based playground for glitch visuals and
+        real-time experiments—built by Tom for Sarah, inspired by her love of bold, experimental aesthetics.
+      </p>
+
+      <h2>What it does</h2>
+      <ul>
+        <li><strong>Distortion Lab:</strong> Live WebGL effects (VHS, CRT, RGB split, bloom, kaleidoscope, ripple, pixel sort, trails, light leaks, and more).</li>
+        <li><strong>ASCII Generator:</strong> Converts your camera to live ASCII art with multiple character sets (classic, numbers, Latin, Cyrillic, Kana, Braille).</li>
+        <li><strong>Shuffle & Stack:</strong> Combine effects and shuffle their order for wild, unexpected results.</li>
+      </ul>
+
+      <h2>How it works</h2>
+      <p>
+        The Lab runs on <strong>WebGL shaders</strong> and a ping-pong render pipeline. The ASCII view uses
+        a canvas readback to map brightness → characters. Camera frames stay local to your device.
+      </p>
+
+      <h2>Roadmap</h2>
+      <ul>
+        <li>More effect controls and presets</li>
+        <li>Optional export tools (images/clips—browser-only)</li>
+        <li>Mobile UI refinements</li>
+        <li>Possibly user-scripted mini effects in a sandbox</li>
+      </ul>
+
+      <h2>Credits</h2>
+      <p>
+        Built by <strong>Tom</strong>. Dedicated to <strong>Sarah</strong>. Thanks to the
+        open-web community for inspiration around GLSL and creative coding.
+      </p>
+    </main>
+
+    <footer class="wrap" style="margin-top:28px">
+      <div class="links" style="display:flex;gap:18px;justify-content:center;margin:28px 0 8px">
+        <a href="./about.html">About</a>
+        <a href="./privacy.html">Privacy</a>
+        <a href="./contact.html">Contact</a>
+      </div>
+      <div class="muted" style="text-align:center;margin-bottom:24px;">
+        © <span id="y"></span> SarahwebFX
+      </div>
+    </footer>
+  </div>
+  <script>document.getElementById('y').textContent = new Date().getFullYear();</script>
+</body>
+</html>

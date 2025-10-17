@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Contact — SarahwebFX</title>
+  <link rel="canonical" href="https://www.sarahwebfx.com/contact.html" />
+  <meta name="description" content="Contact SarahwebFX for questions, ideas, or bug reports." />
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="stylesheet" href="./lab.css" />
+  <style>
+    body,html{height:100%}
+    .page{min-height:100%;display:flex;flex-direction:column}
+    main.wrap{flex:1}
+    .card{border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;margin:10px 0}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="top">
+      <nav class="left">
+        <a class="navlink" href="./index.html">⟵ Home</a>
+        <a class="navlink" href="./lab.html">Distortion Lab</a>
+        <a class="navlink" href="./ascii.html">ASCII Generator</a>
+      </nav>
+      <h1 class="brand">Sarahweb</h1>
+      <div class="right"></div>
+    </header>
+
+    <main class="wrap" style="max-width:880px">
+      <h1>Contact</h1>
+      <p>We’d love to hear from you — ideas, feedback, bug reports, or feature requests.</p>
+
+      <div class="card">
+        <h2>Email</h2>
+        <p>
+          <a href="mailto:sarahwebeffects@gmail.com">sarahwebeffects@gmail.com</a>
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>Bug Reports</h2>
+        <ul>
+          <li>Include your device + browser (e.g., iPhone 14 / Safari 17, Windows 11 / Chrome 129).</li>
+          <li>Tell us which page (Lab/ASCII) and which effect(s) you had enabled.</li>
+          <li>If possible, include a short screen recording or screenshots.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>FAQ</h2>
+        <p><strong>Why does the camera require HTTPS?</strong><br>
+        Browsers only allow camera access on secure origins (https) or <code>localhost</code>.</p>
+
+        <p><strong>Does my video leave the device?</strong><br>
+        No. Processing is local to your browser via WebGL/canvas.</p>
+
+        <p><strong>Why is performance different across devices?</strong><br>
+        GPUs and mobile browsers vary. Disable heavier effects (Bloom/CRT) if needed.</p>
+      </div>
+    </main>
+
+    <footer class="wrap" style="margin-top:28px">
+      <div class="links" style="display:flex;gap:18px;justify-content:center;margin:28px 0 8px">
+        <a href="./about.html">About</a>
+        <a href="./privacy.html">Privacy</a>
+        <a href="./contact.html">Contact</a>
+      </div>
+      <div class="muted" style="text-align:center;margin-bottom:24px;">
+        © <span id="y"></span> SarahwebFX
+      </div>
+    </footer>
+  </div>
+  <script>document.getElementById('y').textContent = new Date().getFullYear();</script>
+</body>
+</html>

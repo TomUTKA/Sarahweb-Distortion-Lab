@@ -1,4 +1,11 @@
 User-agent: *
 Allow: /
 
+# Disallow internal files and directories
+Disallow: /assets/
+Disallow: /lab.js
+Disallow: /ascii.js
+Disallow: /lab.css
+
+# Sitemap location
 Sitemap: https://www.sarahwebfx.com/sitemap.xml

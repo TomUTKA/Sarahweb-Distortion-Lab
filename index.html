@@ -252,5 +252,20 @@
       requestAnimationFrame(tick);
     })();
   </script>
+
+<footer class="wrap" style="margin-top:28px">
+  <div class="links" style="display:flex;gap:18px;justify-content:center;margin:28px 0 8px">
+    <a href="./about.html">About</a>
+    <a href="./privacy.html">Privacy</a>
+    <a href="./contact.html">Contact</a>
+  </div>
+  <div class="muted" style="text-align:center;margin-bottom:24px;">
+    © <span id="y"></span> SarahwebFX
+  </div>
+</footer>
+<script>
+  (function(){ var y=document.getElementById('y'); if(y) y.textContent=new Date().getFullYear(); })();
+</script>
+
 </body>
 </html>

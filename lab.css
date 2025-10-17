@@ -134,3 +134,12 @@ input[type="number"], select, input[type="color"]{
 
 /* Utility */
 .hidden{ display:none; }
+
+header .brand {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  width: max-content;
+}
+
