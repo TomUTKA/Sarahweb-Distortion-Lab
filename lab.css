@@ -272,3 +272,57 @@ header.top .right {
     justify-content: center;
   }
 }
+
+/* ==== Header patch: keep brand centered & de-overlap buttons ==== */
+
+/* Explicit grid areas so things can't sit on top of each other */
+header.top {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: "left brand right";
+  align-items: center;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+/* Assign areas */
+header.top .left  { grid-area: left;  display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-width:0; }
+header.top .right { grid-area: right; display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; min-width:0; }
+header.top .brand { grid-area: brand; }
+
+/* Make 100% sure the brand never looks like a button */
+header.top .brand {
+  display: block;
+  margin: 0;
+  padding: 0;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  text-align: center;
+  font-size: clamp(16px, 2vw, 20px);
+  font-weight: 700;
+  color: var(--cyan, #00eaff);
+  text-shadow: 0 0 8px rgba(0,255,255,.35);
+  pointer-events: none; /* purely decorative title */
+}
+
+/* Ensure nav links/buttons don’t spill into brand on narrow widths */
+header.top .left > *, header.top .right > * {
+  max-width: 100%;
+}
+
+/* Mobile stack stays neat */
+@media (max-width: 640px) {
+  header.top {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "brand"
+      "left"
+      "right";
+    justify-items: center;
+    gap: 6px;
+  }
+  header.top .right { justify-content: center; }
+}
