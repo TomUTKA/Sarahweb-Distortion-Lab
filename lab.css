@@ -204,3 +204,12 @@ body { min-height: 100svh; display: flex; flex-direction: column; }
 main { flex: 1; }
 .site-footer { margin-top: auto; }
 
+/* Hide the <video> source element (we render to <canvas>) */
+#vid {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
