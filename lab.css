@@ -326,3 +326,26 @@ header.top .left > *, header.top .right > * {
   }
   header.top .right { justify-content: center; }
 }
+
+/* --- Fine-tune brand alignment for larger screens --- */
+@media (min-width: 900px) {
+  header.top .brand {
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0 auto;
+    text-align: center;
+  }
+}
+/* === Center brand logo on simple pages (About / Privacy / Contact) === */
+body:not(:has(.wrap .stage)) header.top .brand {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  margin: 0 auto;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  pointer-events: none;
+}
