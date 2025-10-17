@@ -384,3 +384,29 @@ body:not(:has(.wrap .stage)) header.top .brand {
   box-shadow: none;
   pointer-events: none;
 }
+
+/* === ASCII / Lab mobile header fix === */
+@media (max-width: 640px) {
+  header.top .brand {
+    display: block;
+    line-height: 1.2;
+    font-size: clamp(16px, 4.5vw, 20px);
+    padding: 4px 0 6px;
+    white-space: normal;
+    max-width: 90%;
+    margin: 0 auto;
+  }
+
+  header.top {
+    padding-top: 8px;
+    padding-bottom: 10px;
+    row-gap: 4px;
+  }
+
+  /* Add spacing between buttons and logo */
+  header.top .right,
+  header.top .left {
+    margin-top: 4px;
+    justify-content: center;
+  }
+}
